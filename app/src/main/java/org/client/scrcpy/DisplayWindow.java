@@ -2,16 +2,14 @@ package org.client.scrcpy;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
+import android.view.View.MeasureSpec;
 import android.widget.FrameLayout;
 
 public class DisplayWindow extends FrameLayout {
@@ -28,6 +26,8 @@ public class DisplayWindow extends FrameLayout {
     ViewGroup container;
     SurfaceView surfaceView;
     ViewGroup actionbar;
+    private int remoteWidth;
+    private int remoteHeight;
 
     public DisplayWindow(Context context) {
         super(context);
@@ -52,6 +52,16 @@ public class DisplayWindow extends FrameLayout {
         container = findViewById(R.id.container);
         surfaceView = findViewById(R.id.surface);
         actionbar = findViewById(R.id.actionbar);
+
+        addOnLayoutChangeListener(new OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom,
+                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
+                    post(DisplayWindow.this::applyRemoteSize);
+                }
+            }
+        });
 
         findViewById(R.id.iv_close).setOnTouchListener(new OnTouchListener() {
             @Override
@@ -159,31 +169,10 @@ public class DisplayWindow extends FrameLayout {
     }
 
     public void setRemote(int w,int h){
-        DisplayMetrics metrics = new DisplayMetrics();
-        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-        final Display display = windowManager.getDefaultDisplay();
-        display.getRealMetrics(metrics);
-        float this_dev_height = metrics.heightPixels;
-        float this_dev_width = Math.min(metrics.heightPixels,metrics.widthPixels);
-
-        post(new Runnable() {
-            @Override
-            public void run() {
-                //根据比例设置高度
-                ViewGroup.LayoutParams lp = container.getLayoutParams();
-                float rate = (float)w/h;
-                Log.d(TAG, "setRemote: "+w+","+h+" %->"+rate);
-                //高度屏幕的80%，然后宽度按比例
-                lp.height = (int)(this_dev_height * 0.95 - actionbar.getMeasuredHeight() - header.getMeasuredHeight()-50);
-                lp.width = (int) (lp.height * rate);
-                container.setLayoutParams(lp);
-
-                ViewGroup.LayoutParams lp2 = header.getLayoutParams();
-                lp2.width = lp.width;
-                header.setLayoutParams(lp2);
-                requestLayout();
-            }
-        });
+        remoteWidth = w;
+        remoteHeight = h;
+        Log.d(TAG, "setRemote: " + remoteWidth + "," + remoteHeight);
+        post(this::applyRemoteSize);
 
     }
 
@@ -201,6 +190,66 @@ public class DisplayWindow extends FrameLayout {
 
     public int getSurfaceHeight(){
         return container.getMeasuredHeight();
+    }
+
+    private void applyRemoteSize() {
+        if (remoteWidth <= 0 || remoteHeight <= 0) {
+            return;
+        }
+
+        int availableWidth = getWidth() - getPaddingLeft() - getPaddingRight();
+        int availableHeight = getHeight() - getPaddingTop() - getPaddingBottom();
+        if (availableWidth <= 0 || availableHeight <= 0) {
+            return;
+        }
+
+        int headerHeight = header.getMeasuredHeight();
+        if (headerHeight <= 0) {
+            header.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST),
+                    MeasureSpec.makeMeasureSpec(availableHeight, MeasureSpec.AT_MOST));
+            headerHeight = header.getMeasuredHeight();
+        }
+
+        int actionbarHeight = actionbar.getVisibility() == VISIBLE ? actionbar.getMeasuredHeight() : 0;
+        if (actionbarHeight <= 0 && actionbar.getVisibility() == VISIBLE) {
+            actionbar.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST),
+                    MeasureSpec.makeMeasureSpec(availableHeight, MeasureSpec.AT_MOST));
+            actionbarHeight = actionbar.getMeasuredHeight();
+        }
+
+        int maxContainerHeight = Math.max(0, availableHeight - headerHeight - actionbarHeight);
+        int maxContainerWidth = availableWidth;
+        if (maxContainerHeight == 0 || maxContainerWidth == 0) {
+            return;
+        }
+
+        float ratio = (float) remoteWidth / (float) remoteHeight;
+        int targetHeight = maxContainerHeight;
+        int targetWidth = Math.round(targetHeight * ratio);
+
+        if (targetWidth > maxContainerWidth) {
+            targetWidth = maxContainerWidth;
+            targetHeight = Math.round(targetWidth / ratio);
+        }
+
+        if (targetWidth <= 0 || targetHeight <= 0) {
+            return;
+        }
+
+        ViewGroup.LayoutParams contentLp = container.getLayoutParams();
+        if (contentLp.width != targetWidth || contentLp.height != targetHeight) {
+            contentLp.width = targetWidth;
+            contentLp.height = targetHeight;
+            container.setLayoutParams(contentLp);
+        }
+
+        ViewGroup.LayoutParams headerLp = header.getLayoutParams();
+        if (headerLp.width != targetWidth) {
+            headerLp.width = targetWidth;
+            header.setLayoutParams(headerLp);
+        }
+
+        requestLayout();
     }
 
     public interface OnMoveCallback {

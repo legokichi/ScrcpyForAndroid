@@ -40,6 +40,7 @@ public class FloatService extends Service {
 
         Log.d(TAG, "onStartCommand: " + w + "," + h + "|" + b + " ->" + ip);
         displayWindow.setRemote(w, h);
+        updateOverlayLayout();
 
         new Thread(new Runnable() {
             @Override
@@ -70,13 +71,22 @@ public class FloatService extends Service {
 
     }
 
+    private void updateOverlayLayout() {
+        if (windowManager != null && displayWindow != null && displayWindow.getParent() != null) {
+            windowManager.updateViewLayout(displayWindow, lp);
+        }
+    }
+
     private void startCopy(String ip, int width, int height, int bitrate) {
         scrcpyHost = new ScrcpyHost();
         scrcpyHost.setConnectCallBack(new ScrcpyHost.ConnectCallBack() {
             @Override
             public void onConnect(float w, float h) {
-                displayWindow.setRemote((int) w, (int) h);
+                FloatService.this.w = (int) w;
+                FloatService.this.h = (int) h;
+                displayWindow.setRemote(FloatService.this.w, FloatService.this.h);
                 displayWindow.hideHintTip();
+                updateOverlayLayout();
             }
         });
         scrcpyHost.connect(getApplicationContext(), ip, width, height, bitrate, displayWindow.getDisplaySurface());
@@ -87,6 +97,7 @@ public class FloatService extends Service {
         super.onConfigurationChanged(newConfig);
         Log.d(TAG, "onConfigurationChanged: ");
         displayWindow.setRemote(w, h);
+        updateOverlayLayout();
     }
 
     @Override

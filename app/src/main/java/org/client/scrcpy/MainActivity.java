@@ -83,6 +83,19 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
 
     // private byte[] fileBase64;
     private LinearLayout linearLayout;
+    private final View.OnLayoutChangeListener surfaceLayoutChangeListener = (view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+        if ((right - left) == (oldRight - oldLeft) && (bottom - top) == (oldBottom - oldTop)) {
+            return;
+        }
+        if (scrcpy == null) {
+            return;
+        }
+        int[] remRes = scrcpy.get_remote_device_resolution();
+        if (remRes == null || remRes.length < 2 || remRes[0] <= 0 || remRes[1] <= 0) {
+            return;
+        }
+        set_display_nd_touch();
+    };
 
     private int errorCount = 0;  // 连接失败错误的计数，错误超过一定次数重启服务
 
@@ -360,6 +373,9 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
 
     @SuppressLint("ClickableViewAccessibility")
     public void set_display_nd_touch() {
+        if (linearLayout == null || scrcpy == null) {
+            return;
+        }
         DisplayMetrics metrics = new DisplayMetrics();
         if (ViewConfiguration.get(context).hasPermanentMenuKey()) {
             getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -372,6 +388,9 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
 
         float this_dev_height = linearLayout.getHeight();
         float this_dev_width = linearLayout.getWidth();
+        if (this_dev_height <= 0 || this_dev_width <= 0) {
+            return;
+        }
         if (PreUtils.get(context, Constant.CONTROL_NAV, false) &&
                 !PreUtils.get(context, Constant.CONTROL_NO, false)) {
             if (landscape) {
@@ -381,6 +400,9 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
             }
         }
         int[] rem_res = scrcpy.get_remote_device_resolution();
+        if (rem_res == null || rem_res.length < 2 || rem_res[0] <= 0 || rem_res[1] <= 0) {
+            return;
+        }
         int remote_device_height = rem_res[1];
         int remote_device_width = rem_res[0];
         float remote_device_aspect_ratio = (float) remote_device_height / remote_device_width;
@@ -562,7 +584,14 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         } else {
             nav_bar.setVisibility(LinearLayout.GONE);
         }
+        if (linearLayout != null) {
+            linearLayout.removeOnLayoutChangeListener(surfaceLayoutChangeListener);
+        }
         linearLayout = findViewById(R.id.container1);
+        if (linearLayout != null) {
+            linearLayout.addOnLayoutChangeListener(surfaceLayoutChangeListener);
+            linearLayout.post(this::set_display_nd_touch);
+        }
         start_Scrcpy_service();
     }
 
