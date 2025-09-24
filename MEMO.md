@@ -25,3 +25,129 @@
 ## 注意事項
 - `app/src/main/AndroidManifest.xml` と `server/src/main/AndroidManifest.xml` の `package` 属性は namespace と重複しており、Gradle 8 系では無視されるため警告が出る。
 - アプリ内では `ProgressDialog` や `View#setSystemUiVisibility` など非推奨 API が使われている。ビルドは成功するが将来のメンテナンスで置き換えを検討。
+
+## ファイル一覧
+
+- `.github/workflows/android.yml`: GitHub Actions のワークフロー（ビルドとテスト）
+- `.gitignore`: Git の無視ルール
+- `AGENTS.md`: Markdown ドキュメント「Repository Guidelines」
+- `Dockerfile`: Android ビルド環境用 Dockerfile
+- `LICENSE`: Apache License 2.0
+- `MEMO.md`: Markdown ドキュメント「MEMO」
+- `README.md`: Markdown ドキュメント「Scrcpy for Android」
+- `app/.gitignore`: app モジュールの Git 無視ルール
+- `app/build.gradle`: app モジュールの Gradle ビルドスクリプト
+- `app/src/main/AndroidManifest.xml`: app モジュールの AndroidManifest
+- `app/src/main/java/org/client/scrcpy/App.java`: Java クラス `App`、（パッケージ `org.client.scrcpy`）
+- `app/src/main/java/org/client/scrcpy/Constant.java`: Java クラス `Constant`、（パッケージ `org.client.scrcpy`）
+- `app/src/main/java/org/client/scrcpy/Dialog.java`: Java クラス `Dialog`、（パッケージ `org.client.scrcpy`）
+- `app/src/main/java/org/client/scrcpy/DisplayWindow.java`: Java クラス `DisplayWindow`、（パッケージ `org.client.scrcpy`）、`FrameLayout` を継承
+- `app/src/main/java/org/client/scrcpy/FloatService.java`: Java クラス `FloatService`、（パッケージ `org.client.scrcpy`）、`Service` を継承
+- `app/src/main/java/org/client/scrcpy/MainActivity.java`: Java クラス `MainActivity`、（パッケージ `org.client.scrcpy`）、`Activity` を継承、`Scrcpy.ServiceCallbacks`、`SensorEventListener` を実装
+- `app/src/main/java/org/client/scrcpy/Scrcpy.java`: Java クラス `Scrcpy`、（パッケージ `org.client.scrcpy`）、`Service` を継承
+- `app/src/main/java/org/client/scrcpy/ScrcpyHost.java`: Java クラス `ScrcpyHost`、（パッケージ `org.client.scrcpy`）、`Scrcpy.ServiceCallbacks` を実装
+- `app/src/main/java/org/client/scrcpy/SendCommands.java`: Java クラス `SendCommands`、（パッケージ `org.client.scrcpy`）
+- `app/src/main/java/org/client/scrcpy/decoder/AudioDecoder.java`: Java クラス `AudioDecoder`、（パッケージ `org.client.scrcpy.decoder`）
+- `app/src/main/java/org/client/scrcpy/decoder/VideoDecoder.java`: Java クラス `VideoDecoder`、（パッケージ `org.client.scrcpy.decoder`）
+- `app/src/main/java/org/client/scrcpy/model/AudioPacket.java`: Java クラス `AudioPacket`、（パッケージ `org.client.scrcpy.model`）、`MediaPacket` を継承
+- `app/src/main/java/org/client/scrcpy/model/ByteUtils.java`: Java クラス `ByteUtils`、（パッケージ `org.client.scrcpy.model`）
+- `app/src/main/java/org/client/scrcpy/model/MediaPacket.java`: Java クラス `MediaPacket`、（パッケージ `org.client.scrcpy.model`）
+- `app/src/main/java/org/client/scrcpy/model/VideoPacket.java`: Java クラス `VideoPacket`、（パッケージ `org.client.scrcpy.model`）、`MediaPacket` を継承
+- `app/src/main/java/org/client/scrcpy/utils/ExecUtil.java`: Java クラス `ExecUtil`、（パッケージ `org.client.scrcpy.utils`）
+- `app/src/main/java/org/client/scrcpy/utils/FileUtils.java`: Java クラス `FileUtils`、（パッケージ `org.client.scrcpy.utils`）
+- `app/src/main/java/org/client/scrcpy/utils/HttpRequest.java`: Java クラス `HttpRequest`、（パッケージ `org.client.scrcpy.utils`）
+- `app/src/main/java/org/client/scrcpy/utils/PreUtils.java`: Java クラス `PreUtils`、（パッケージ `org.client.scrcpy.utils`）
+- `app/src/main/java/org/client/scrcpy/utils/ProcessHelper.java`: Java クラス `ProcessHelper`、（パッケージ `org.client.scrcpy.utils`）
+- `app/src/main/java/org/client/scrcpy/utils/Progress.java`: Java クラス `Progress`、（パッケージ `org.client.scrcpy.utils`）
+- `app/src/main/java/org/client/scrcpy/utils/ThreadUtils.java`: Java クラス `ThreadUtils`、（パッケージ `org.client.scrcpy.utils`）
+- `app/src/main/java/org/client/scrcpy/utils/Util.java`: Java クラス `Util`、（パッケージ `org.client.scrcpy.utils`）
+- `app/src/main/jniLibs/LICENSE`: バンドルしている ADB ネイティブライブラリのライセンス
+- `app/src/main/jniLibs/arm64-v8a/libadb.so`: ABI `arm64-v8a` 向けの libadb ネイティブライブラリ
+- `app/src/main/jniLibs/armeabi-v7a/libadb.so`: ABI `armeabi-v7a` 向けの libadb ネイティブライブラリ
+- `app/src/main/jniLibs/x86/libadb.so`: ABI `x86` 向けの libadb ネイティブライブラリ
+- `app/src/main/jniLibs/x86_64/libadb.so`: ABI `x86_64` 向けの libadb ネイティブライブラリ
+- `app/src/main/res/drawable-v24/ic_launcher_foreground.xml`: `<vector>` ルートの Drawable XML
+- `app/src/main/res/drawable/btn_click.xml`: `<shape>` ルートの Drawable XML
+- `app/src/main/res/drawable/btn_global.xml`: `<shape>` ルートの Drawable XML
+- `app/src/main/res/drawable/btn_selector.xml`: `<selector>` ルートの Drawable XML
+- `app/src/main/res/drawable/close.png`: PNG 画像アセット
+- `app/src/main/res/drawable/down.png`: PNG 画像アセット
+- `app/src/main/res/drawable/edit_background.xml`: `<layer-list>` ルートの Drawable XML
+- `app/src/main/res/drawable/ic_launcher_background.xml`: `<vector>` ルートの Drawable XML
+- `app/src/main/res/drawable/minis.png`: PNG 画像アセット
+- `app/src/main/res/layout-land/surface.xml`: ランドスケープ向け `<LinearLayout>` をルートに持つレイアウト XML
+- `app/src/main/res/layout-land/surface_nav.xml`: ランドスケープ向け `<LinearLayout>` をルートに持つレイアウト XML
+- `app/src/main/res/layout-land/surface_no_nav.xml`: ランドスケープ向け `<LinearLayout>` をルートに持つレイアウト XML
+- `app/src/main/res/layout/activity_main.xml`: `<androidx.constraintlayout.widget.ConstraintLayout>` をルートに持つレイアウト XML
+- `app/src/main/res/layout/surface.xml`: `<LinearLayout>` をルートに持つレイアウト XML
+- `app/src/main/res/layout/surface_nav.xml`: `<LinearLayout>` をルートに持つレイアウト XML
+- `app/src/main/res/layout/surface_no_nav.xml`: `<LinearLayout>` をルートに持つレイアウト XML
+- `app/src/main/res/layout/window_display.xml`: `<LinearLayout>` をルートに持つレイアウト XML
+- `app/src/main/res/mipmap-xhdpi/ic_launcher.png`: PNG 画像アセット
+- `app/src/main/res/mipmap-xhdpi/ic_launcher_round.png`: PNG 画像アセット
+- `app/src/main/res/values-ja/strings.xml`: Android の文字列リソース（string 19 件、string-array 3 件）
+- `app/src/main/res/values-zh/strings.xml`: Android の文字列リソース（string 19 件）
+- `app/src/main/res/values/attrs.xml`: カスタム属性定義（`ButtonBarContainerTheme`）
+- `app/src/main/res/values/colors.xml`: 色リソース（4 件）
+- `app/src/main/res/values/strings.xml`: Android の文字列リソース（string 20 件、string-array 3 件）
+- `app/src/main/res/values/styles.xml`: スタイルリソース（2 件）
+- `app/src/scrcpy/AndroidManifest.xml`: scrcpy フレーバーの AndroidManifest
+- `app/src/scrcpy/res/mipmap-xhdpi/ic_launcher.png`: PNG 画像アセット
+- `app/src/scrcpy/res/mipmap-xhdpi/ic_launcher_round.png`: PNG 画像アセット
+- `build.gradle`: ルートの Gradle ビルドスクリプト
+- `fastlane/metadata/android/en-US/full_description.txt`: Google Play ストア説明文（en-US、全文）
+- `fastlane/metadata/android/en-US/images/icon.png`: Google Play icon 用画像（en-US、PNG）
+- `fastlane/metadata/android/en-US/images/phoneScreenshots/home.jpg`: Google Play phoneScreenshots 用画像（en-US、JPG）
+- `fastlane/metadata/android/en-US/short_description.txt`: Google Play ストア説明文（en-US、短文）
+- `gradle.properties`: Gradle プロパティ定義（3 件）
+- `gradle/wrapper/gradle-wrapper.jar`: Gradle Wrapper JAR
+- `gradle/wrapper/gradle-wrapper.properties`: Gradle Wrapper 設定ファイル
+- `gradlew`: Gradle Wrapper スクリプト（Unix 系）
+- `gradlew.bat`: Gradle Wrapper スクリプト（Windows）
+- `home.jpg`: プロモーション用スクリーンショット画像
+- `server/.gitignore`: server モジュールの Git 無視ルール
+- `server/LICENSE`: server モジュールの Apache License 2.0
+- `server/build.gradle`: server モジュールの Gradle ビルドスクリプト
+- `server/src/main/AndroidManifest.xml`: server モジュールの AndroidManifest
+- `server/src/main/aidl/android/view/IRotationWatcher.aidl`: AIDL インターフェース `IRotationWatcher` 定義
+- `server/src/main/java/android/content/IContentProvider.java`: 隠し API `android.content.IContentProvider` を露出するスタブインターフェース
+- `server/src/main/java/org/server/scrcpy/AudioEncoder.java`: Java クラス `AudioEncoder`、（パッケージ `org.server.scrcpy`）
+- `server/src/main/java/org/server/scrcpy/Device.java`: Java クラス `Device`、（パッケージ `org.server.scrcpy`）
+- `server/src/main/java/org/server/scrcpy/DisplayInfo.java`: Java クラス `DisplayInfo`、（パッケージ `org.server.scrcpy`）
+- `server/src/main/java/org/server/scrcpy/DroidConnection.java`: Java クラス `DroidConnection`、（パッケージ `org.server.scrcpy`）、`Closeable` を実装
+- `server/src/main/java/org/server/scrcpy/EventController.java`: Java クラス `EventController`、（パッケージ `org.server.scrcpy`）
+- `server/src/main/java/org/server/scrcpy/Ln.java`: Java クラス `Ln`、（パッケージ `org.server.scrcpy`）
+- `server/src/main/java/org/server/scrcpy/Options.java`: Java クラス `Options`、（パッケージ `org.server.scrcpy`）
+- `server/src/main/java/org/server/scrcpy/Position.java`: Java クラス `Position`、（パッケージ `org.server.scrcpy`）
+- `server/src/main/java/org/server/scrcpy/ScreenCapture.java`: Java クラス `ScreenCapture`、（パッケージ `org.server.scrcpy`）
+- `server/src/main/java/org/server/scrcpy/ScreenEncoder.java`: Java クラス `ScreenEncoder`、（パッケージ `org.server.scrcpy`）、`Device.RotationListener` を実装
+- `server/src/main/java/org/server/scrcpy/ScreenInfo.java`: Java クラス `ScreenInfo`、（パッケージ `org.server.scrcpy`）
+- `server/src/main/java/org/server/scrcpy/Server.java`: Java クラス `Server`、（パッケージ `org.server.scrcpy`）
+- `server/src/main/java/org/server/scrcpy/Size.java`: Java クラス `Size`、（パッケージ `org.server.scrcpy`）
+- `server/src/main/java/org/server/scrcpy/audio/AudioCapture.java`: Java インターフェース `AudioCapture`、（パッケージ `org.server.scrcpy.audio`）
+- `server/src/main/java/org/server/scrcpy/audio/AudioCaptureException.java`: Java クラス `AudioCaptureException`、（パッケージ `org.server.scrcpy.audio`）、`Exception` を継承
+- `server/src/main/java/org/server/scrcpy/audio/AudioConfig.java`: Java クラス `AudioConfig`、（パッケージ `org.server.scrcpy.audio`）
+- `server/src/main/java/org/server/scrcpy/audio/AudioDirectCapture.java`: Java クラス `AudioDirectCapture`、（パッケージ `org.server.scrcpy.audio`）、`AudioCapture` を実装
+- `server/src/main/java/org/server/scrcpy/audio/AudioRecordReader.java`: Java クラス `AudioRecordReader`、（パッケージ `org.server.scrcpy.audio`）
+- `server/src/main/java/org/server/scrcpy/audio/AudioSource.java`: Java 列挙型 `AudioSource`、（パッケージ `org.server.scrcpy.audio`）
+- `server/src/main/java/org/server/scrcpy/control/Pointer.java`: Java クラス `Pointer`、（パッケージ `org.server.scrcpy.control`）
+- `server/src/main/java/org/server/scrcpy/control/PointersState.java`: Java クラス `PointersState`、（パッケージ `org.server.scrcpy.control`）
+- `server/src/main/java/org/server/scrcpy/device/Point.java`: Java クラス `Point`、（パッケージ `org.server.scrcpy.device`）
+- `server/src/main/java/org/server/scrcpy/model/AudioPacket.java`: Java クラス `AudioPacket`、（パッケージ `org.server.scrcpy.model`）、`MediaPacket` を継承
+- `server/src/main/java/org/server/scrcpy/model/ByteUtils.java`: Java クラス `ByteUtils`、（パッケージ `org.server.scrcpy.model`）
+- `server/src/main/java/org/server/scrcpy/model/MediaPacket.java`: Java クラス `MediaPacket`、（パッケージ `org.server.scrcpy.model`）
+- `server/src/main/java/org/server/scrcpy/model/VideoPacket.java`: Java クラス `VideoPacket`、（パッケージ `org.server.scrcpy.model`）、`MediaPacket` を継承
+- `server/src/main/java/org/server/scrcpy/util/Command.java`: Java クラス `Command`、（パッケージ `org.server.scrcpy.util`）
+- `server/src/main/java/org/server/scrcpy/util/FakeContext.java`: Java クラス `FakeContext`、（パッケージ `org.server.scrcpy.util`）、`ContextWrapper` を継承
+- `server/src/main/java/org/server/scrcpy/util/IO.java`: Java クラス `IO`、（パッケージ `org.server.scrcpy.util`）
+- `server/src/main/java/org/server/scrcpy/util/SettingsException.java`: Java クラス `SettingsException`、（パッケージ `org.server.scrcpy.util`）、`Exception` を継承
+- `server/src/main/java/org/server/scrcpy/util/Workarounds.java`: Java クラス `Workarounds`、（パッケージ `org.server.scrcpy.util`）
+- `server/src/main/java/org/server/scrcpy/wrappers/ActivityManager.java`: Java クラス `ActivityManager`、（パッケージ `org.server.scrcpy.wrappers`）
+- `server/src/main/java/org/server/scrcpy/wrappers/ContentProvider.java`: Java クラス `ContentProvider`、（パッケージ `org.server.scrcpy.wrappers`）、`Closeable` を実装
+- `server/src/main/java/org/server/scrcpy/wrappers/DisplayManager.java`: Java クラス `DisplayManager`、（パッケージ `org.server.scrcpy.wrappers`）
+- `server/src/main/java/org/server/scrcpy/wrappers/InputManager.java`: Java クラス `InputManager`、（パッケージ `org.server.scrcpy.wrappers`）
+- `server/src/main/java/org/server/scrcpy/wrappers/PowerManager.java`: Java クラス `PowerManager`、（パッケージ `org.server.scrcpy.wrappers`）
+- `server/src/main/java/org/server/scrcpy/wrappers/ServiceManager.java`: Java クラス `ServiceManager`、（パッケージ `org.server.scrcpy.wrappers`）
+- `server/src/main/java/org/server/scrcpy/wrappers/SurfaceControl.java`: Java クラス `SurfaceControl`、（パッケージ `org.server.scrcpy.wrappers`）
+- `server/src/main/java/org/server/scrcpy/wrappers/WindowManager.java`: Java クラス `WindowManager`、（パッケージ `org.server.scrcpy.wrappers`）
+- `settings.gradle`: Gradle の設定ファイル（モジュール定義）
