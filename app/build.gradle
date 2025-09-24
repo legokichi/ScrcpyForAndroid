@@ -37,6 +37,9 @@ android {
             minifyEnabled false
             signingConfig signingConfigs.release
         }
+        debug {
+            signingConfig signingConfigs.release
+        }
     }
 
     productFlavors {
