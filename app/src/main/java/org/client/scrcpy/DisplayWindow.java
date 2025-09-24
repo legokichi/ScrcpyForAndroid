@@ -1,15 +1,17 @@
 package org.client.scrcpy;
 
 import android.content.Context;
+import android.os.SystemClock;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.View.MeasureSpec;
 import android.widget.FrameLayout;
 
 public class DisplayWindow extends FrameLayout {
@@ -21,6 +23,14 @@ public class DisplayWindow extends FrameLayout {
 
     private float oldX;
     private float oldY;
+    private float userScale = 1f;
+    private static final float MIN_SCALE = 0.3f;
+    private static final float MAX_SCALE = 3.0f;
+    private int baseContainerWidth;
+    private int baseContainerHeight;
+    private ScaleGestureDetector scaleGestureDetector;
+    private boolean scaling;
+    private boolean forwardingTouchToRemote;
 
     ViewGroup header;
     ViewGroup container;
@@ -49,17 +59,28 @@ public class DisplayWindow extends FrameLayout {
         setClipToPadding(false);
         LayoutInflater.from(getContext()).inflate(R.layout.window_display,this,true);
 
+        header = findViewById(R.id.header);
         container = findViewById(R.id.container);
         surfaceView = findViewById(R.id.surface);
         actionbar = findViewById(R.id.actionbar);
 
-        addOnLayoutChangeListener(new OnLayoutChangeListener() {
+        scaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleGestureDetector.SimpleOnScaleGestureListener() {
             @Override
-            public void onLayoutChange(View v, int left, int top, int right, int bottom,
-                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
-                    post(DisplayWindow.this::applyRemoteSize);
-                }
+            public boolean onScale(ScaleGestureDetector detector) {
+                setUserScale(userScale * detector.getScaleFactor());
+                return true;
+            }
+
+            @Override
+            public boolean onScaleBegin(ScaleGestureDetector detector) {
+                scaling = true;
+                dispatchCancelToRemote();
+                return true;
+            }
+
+            @Override
+            public void onScaleEnd(ScaleGestureDetector detector) {
+                scaling = false;
             }
         });
 
@@ -73,7 +94,6 @@ public class DisplayWindow extends FrameLayout {
             }
         });
 
-        header = findViewById(R.id.header);
         header.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -108,6 +128,7 @@ public class DisplayWindow extends FrameLayout {
                     }else{
                         container.setVisibility(View.VISIBLE);
                         actionbar.setVisibility(View.VISIBLE);
+                        post(DisplayWindow.this::applyCurrentSize);
                     }
                 }
                 return false;
@@ -143,7 +164,23 @@ public class DisplayWindow extends FrameLayout {
         container.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                return onDisplayTouchListener.onTouch(view,motionEvent);
+                scaleGestureDetector.onTouchEvent(motionEvent);
+                if (scaling) {
+                    if (motionEvent.getActionMasked() == MotionEvent.ACTION_UP
+                            || motionEvent.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                        scaling = false;
+                    }
+                    return true;
+                }
+                if (onDisplayTouchListener == null) {
+                    return false;
+                }
+                boolean handled = onDisplayTouchListener.onTouch(view, motionEvent);
+                if (handled) {
+                    forwardingTouchToRemote = motionEvent.getActionMasked() != MotionEvent.ACTION_UP
+                            && motionEvent.getActionMasked() != MotionEvent.ACTION_CANCEL;
+                }
+                return handled;
             }
         });
     }
@@ -172,7 +209,8 @@ public class DisplayWindow extends FrameLayout {
         remoteWidth = w;
         remoteHeight = h;
         Log.d(TAG, "setRemote: " + remoteWidth + "," + remoteHeight);
-        post(this::applyRemoteSize);
+        calculateBaseSize();
+        post(this::applyCurrentSize);
 
     }
 
@@ -192,49 +230,62 @@ public class DisplayWindow extends FrameLayout {
         return container.getMeasuredHeight();
     }
 
-    private void applyRemoteSize() {
+    private void calculateBaseSize() {
+        if (remoteWidth <= 0 || remoteHeight <= 0) {
+            baseContainerWidth = 0;
+            baseContainerHeight = 0;
+            return;
+        }
+
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        int screenWidth = metrics.widthPixels;
+        int screenHeight = metrics.heightPixels;
+        int maxWidth = Math.max(dpToPx(160), (int) (screenWidth * 0.8f));
+        int maxHeight = Math.max(dpToPx(160), (int) (screenHeight * 0.8f));
+
+        float ratio = (float) remoteWidth / (float) remoteHeight;
+
+        int widthCandidate = maxWidth;
+        int heightCandidate = Math.round(widthCandidate / ratio);
+
+        if (heightCandidate > maxHeight) {
+            heightCandidate = maxHeight;
+            widthCandidate = Math.round(heightCandidate * ratio);
+        }
+
+        int minWidth = dpToPx(160);
+        int minHeight = dpToPx(200);
+
+        if (widthCandidate < minWidth) {
+            widthCandidate = minWidth;
+            heightCandidate = Math.round(widthCandidate / ratio);
+        }
+
+        if (heightCandidate < minHeight) {
+            heightCandidate = minHeight;
+            widthCandidate = Math.round(heightCandidate * ratio);
+        }
+
+        baseContainerWidth = Math.max(1, widthCandidate);
+        baseContainerHeight = Math.max(1, heightCandidate);
+    }
+
+    private void applyCurrentSize() {
         if (remoteWidth <= 0 || remoteHeight <= 0) {
             return;
         }
 
-        int availableWidth = getWidth() - getPaddingLeft() - getPaddingRight();
-        int availableHeight = getHeight() - getPaddingTop() - getPaddingBottom();
-        if (availableWidth <= 0 || availableHeight <= 0) {
-            return;
+        if (baseContainerWidth <= 0 || baseContainerHeight <= 0) {
+            calculateBaseSize();
         }
 
-        int headerHeight = header.getMeasuredHeight();
-        if (headerHeight <= 0) {
-            header.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST),
-                    MeasureSpec.makeMeasureSpec(availableHeight, MeasureSpec.AT_MOST));
-            headerHeight = header.getMeasuredHeight();
+        float clampedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, userScale));
+        if (clampedScale != userScale) {
+            userScale = clampedScale;
         }
 
-        int actionbarHeight = actionbar.getVisibility() == VISIBLE ? actionbar.getMeasuredHeight() : 0;
-        if (actionbarHeight <= 0 && actionbar.getVisibility() == VISIBLE) {
-            actionbar.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST),
-                    MeasureSpec.makeMeasureSpec(availableHeight, MeasureSpec.AT_MOST));
-            actionbarHeight = actionbar.getMeasuredHeight();
-        }
-
-        int maxContainerHeight = Math.max(0, availableHeight - headerHeight - actionbarHeight);
-        int maxContainerWidth = availableWidth;
-        if (maxContainerHeight == 0 || maxContainerWidth == 0) {
-            return;
-        }
-
-        float ratio = (float) remoteWidth / (float) remoteHeight;
-        int targetHeight = maxContainerHeight;
-        int targetWidth = Math.round(targetHeight * ratio);
-
-        if (targetWidth > maxContainerWidth) {
-            targetWidth = maxContainerWidth;
-            targetHeight = Math.round(targetWidth / ratio);
-        }
-
-        if (targetWidth <= 0 || targetHeight <= 0) {
-            return;
-        }
+        int targetWidth = Math.max(1, Math.round(baseContainerWidth * userScale));
+        int targetHeight = Math.max(1, Math.round(baseContainerHeight * userScale));
 
         ViewGroup.LayoutParams contentLp = container.getLayoutParams();
         if (contentLp.width != targetWidth || contentLp.height != targetHeight) {
@@ -249,7 +300,38 @@ public class DisplayWindow extends FrameLayout {
             header.setLayoutParams(headerLp);
         }
 
+        ViewGroup.LayoutParams actionLp = actionbar.getLayoutParams();
+        if (actionLp.width != targetWidth) {
+            actionLp.width = targetWidth;
+            actionbar.setLayoutParams(actionLp);
+        }
+
         requestLayout();
+    }
+
+    private void setUserScale(float scale) {
+        float clamped = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
+        if (Math.abs(clamped - userScale) < 0.001f) {
+            return;
+        }
+        userScale = clamped;
+        applyCurrentSize();
+    }
+
+    private void dispatchCancelToRemote() {
+        if (!forwardingTouchToRemote || onDisplayTouchListener == null) {
+            return;
+        }
+        long now = SystemClock.uptimeMillis();
+        MotionEvent cancel = MotionEvent.obtain(now, now, MotionEvent.ACTION_CANCEL, 0f, 0f, 0);
+        onDisplayTouchListener.onTouch(container, cancel);
+        cancel.recycle();
+        forwardingTouchToRemote = false;
+    }
+
+    private int dpToPx(int dp) {
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        return Math.round(dp * metrics.density);
     }
 
     public interface OnMoveCallback {
