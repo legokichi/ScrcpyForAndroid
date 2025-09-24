@@ -39,13 +39,6 @@ android {
         }
     }
 
-    productFlavors {
-        scrcpy {
-            applicationId "org.client.scrcpy"
-        }
-    }
-
-
     tasks.whenTaskAdded { task ->
         def buildType = gradle.startParameter.taskNames.any { it.endsWith('Release') } ? 'Release' : 'Debug'
 

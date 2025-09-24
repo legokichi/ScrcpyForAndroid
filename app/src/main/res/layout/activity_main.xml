@@ -22,7 +22,7 @@
             android:layout_marginBottom="5dp"
             android:gravity="center_vertical"
             android:padding="20dp"
-            android:text="Scrcpy For Android"
+            android:text="Scrcpy For Quest"
             android:textColor="@color/white" />
 
     </FrameLayout>
