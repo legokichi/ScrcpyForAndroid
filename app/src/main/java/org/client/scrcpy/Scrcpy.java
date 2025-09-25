@@ -133,11 +133,13 @@ public class Scrcpy extends Service {
     }
 
 
-    public boolean touchevent(MotionEvent touch_event, boolean landscape, int displayW, int displayH) {
+    public boolean touchevent(MotionEvent touch_event, int displayW, int displayH) {
         float remoteW;
         float remoteH;
         float realH;
         float realW;
+
+        boolean landscape = displayW > displayH;
 
         if (landscape) {  // Swap width and height when in landscape
             remoteW = Math.max(remote_dev_resolution[0], remote_dev_resolution[1]);

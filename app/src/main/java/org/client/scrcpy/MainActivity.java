@@ -63,7 +63,6 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
     private boolean headlessMode = false;  // Headless mode hides controls and related UI
     private int screenWidth;
     private int screenHeight;
-    private boolean landscape = false;
     private boolean first_time = true;
     private boolean result_of_Rotation = false;
     private boolean serviceBound = false;
@@ -169,22 +168,17 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         connectExitExt(userDisconnect);
     }
 
-    @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.context = this;
         if (savedInstanceState != null) {
             first_time = savedInstanceState.getBoolean("first_time");
-            landscape = savedInstanceState.getBoolean("landscape");
             headlessMode = savedInstanceState.getBoolean("headlessMode");
             resumeScrcpy = savedInstanceState.getBoolean("resumeScrcpy");
             screenHeight = savedInstanceState.getInt("screenHeight");
             screenWidth = savedInstanceState.getInt("screenWidth");
         }
-        // Determine whether the screen is currently landscape or portrait
-        landscape = getApplication().getResources().getConfiguration().orientation
-                != Configuration.ORIENTATION_PORTRAIT;
         if (first_time) {
             scrcpy_main();
         } else {
@@ -224,7 +218,6 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         Log.i("Scrcpy", "enter onSaveInstanceState");
         outState.putBoolean("from_save_instance", true);
         outState.putBoolean("first_time", first_time);
-        outState.putBoolean("landscape", landscape);
         outState.putBoolean("headlessMode", headlessMode);  // Intent resets on the second entry, so persist the state
         // Avoid restoring orientation when toggling between floating/half-screen to prevent black screens (resume only allows a single reconnection)
         // outState.putBoolean("resumeScrcpy", resumeScrcpy);
@@ -232,7 +225,6 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         outState.putInt("screenWidth", screenWidth);
     }
 
-    @SuppressLint("SourceLockedOrientationActivity")
     public void scrcpy_main() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             this.getWindow().setStatusBarColor(getColor(R.color.status_bar));
@@ -241,8 +233,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         }
         final View decorView = getWindow().getDecorView();
         decorView.setSystemUiVisibility(View.VISIBLE);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        landscape = false;  // Reset to portrait; incorrect mode can lead to a black screen
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         setContentView(R.layout.activity_main);
         final Button startButton = findViewById(R.id.button_start);
         // final Button floatButton = findViewById(R.id.button_start_float);
@@ -372,9 +363,10 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
 
         float this_dev_height = linearLayout.getHeight();
         float this_dev_width = linearLayout.getWidth();
+        boolean landscapeOrientation = isLandscapeOrientation();
         if (PreUtils.get(context, Constant.CONTROL_NAV, false) &&
                 !PreUtils.get(context, Constant.CONTROL_NO, false)) {
-            if (landscape) {
+            if (landscapeOrientation) {
                 this_dev_width = this_dev_width - 96;
             } else {                                                 //100 is the height of nav bar but need multiples of 8.
                 this_dev_height = this_dev_height - 96;
@@ -385,7 +377,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         int remote_device_width = rem_res[0];
         float remote_device_aspect_ratio = (float) remote_device_height / remote_device_width;
 
-        if (!landscape) {                                                            //Portrait
+        if (!landscapeOrientation) {                                                            //Portrait
             float this_device_aspect_ratio = this_dev_height / this_dev_width;
 //            Log.d("fuck", "set_display_nd_touch: "+this_device_aspect_ratio);
             if (remote_device_aspect_ratio > this_device_aspect_ratio) {
@@ -411,7 +403,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         }
         if (!PreUtils.get(context, Constant.CONTROL_NO, false)) {
             // Log.i("Screen", "setOnTouchListener: " + surfaceView.getWidth() + "x" + surfaceView.getHeight());
-            surfaceView.setOnTouchListener((view, event) -> scrcpy.touchevent(event, landscape, surfaceView.getWidth(), surfaceView.getHeight()));
+            surfaceView.setOnTouchListener((view, event) -> scrcpy.touchevent(event, surfaceView.getWidth(), surfaceView.getHeight()));
         }
 
         if (PreUtils.get(context, Constant.CONTROL_NAV, false) &&
@@ -430,6 +422,10 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
                 appswitchButton.setOnClickListener(v -> scrcpy.sendKeyevent(KeyEvent.KEYCODE_APP_SWITCH));
             }
         }
+    }
+
+    private boolean isLandscapeOrientation() {
+        return getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
     }
 
     private void setSpinner(final int textArrayOptionResId, final int textViewResId, final String preferenceId) {
@@ -610,7 +606,6 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
-    @SuppressLint("SourceLockedOrientationActivity")
     @Override
     public void loadNewRotation() {
         if (first_time) {
@@ -624,13 +619,8 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         }
         serviceBound = false;
         result_of_Rotation = true;
-        landscape = !landscape;
         swapDimensions();
-        if (landscape) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-        } else {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
-        }
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
     }
 
     @Override
