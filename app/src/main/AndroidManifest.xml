@@ -37,7 +37,19 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="com.oculus.intent.category.2D" />
             </intent-filter>
+
+            <property
+                android:name="android.window.layout"
+                android:resource="@xml/panel_window_layout" />
+
+            <meta-data
+                android:name="com.oculus.vrshell.supports_free_resizing"
+                android:value="true" />
+            <meta-data
+                android:name="com.oculus.vrshell.free_resizing_lock_aspect_ratio"
+                android:value="false" />
         </activity>
 
     </application>
