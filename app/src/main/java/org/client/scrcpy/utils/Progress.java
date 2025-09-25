@@ -34,17 +34,17 @@ public final class Progress {
             }
             Context application = context.getApplication();
             progressDialog = new ProgressDialog(context);
-            // 设置ProgressDialog 提示信息
+            // Configure the ProgressDialog message
             if (!TextUtils.isEmpty(msg)) {
                 progressDialog.setTitle(title);
                 progressDialog.setMessage(msg);
             } else {
-                // 设置ProgressDialog 标题
+                // Use the title as the ProgressDialog message
                 progressDialog.setMessage(title);
             }
-            // 设置ProgressDialog 是否可以按退回按键取消
+            // Prevent cancellation via the back button
             progressDialog.setCancelable(false);
-            // 取消或者关闭弹窗时，置空
+            // Clear the reference when the dialog is dismissed
 
             if (setup) {
                 progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);

@@ -57,18 +57,18 @@ import java.util.HashMap;
 
 public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, SensorEventListener {
 
-    // 是否直接连接远程
+    // Flag that indicates whether to connect directly to a remote device
     public final static String START_REMOTE = "start_remote_headless";
 
-    private boolean headlessMode = false;  // 是否为无头模式，不显示操作选项等
+    private boolean headlessMode = false;  // Headless mode hides controls and related UI
     private int screenWidth;
     private int screenHeight;
     private boolean landscape = false;
     private boolean first_time = true;
     private boolean result_of_Rotation = false;
     private boolean serviceBound = false;
-    // 如果 pause 切换到后台，断开后，自动重连
-    // 该状态禁止保存恢复
+    // Auto-reconnect if we paused to the background and were disconnected
+    // Do not persist this state across restarts
     private boolean resumeScrcpy = false;
     SensorManager sensorManager;
     private SendCommands sendCommands;
@@ -84,7 +84,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
     // private byte[] fileBase64;
     private LinearLayout linearLayout;
 
-    private int errorCount = 0;  // 连接失败错误的计数，错误超过一定次数重启服务
+    private int errorCount = 0;  // Count connection failures; restart the service after too many errors
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -118,7 +118,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
                             Toast.makeText(context, "Connection Timed out 2", Toast.LENGTH_SHORT).show();
                         } else {
                             first_time = false;
-                            // 连接成功后，再把按钮显示出来
+                            // Show the controls only after the connection succeeds
                             set_display_nd_touch();
                             connectSuccessExt();
                         }
@@ -142,13 +142,13 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         showMainView(false);
     }
 
-    // userDisconnect ：是否为用户手动断开连接
+    // userDisconnect indicates a manual disconnect initiated by the user
     private void showMainView(boolean userDisconnect) {
         if (scrcpy != null) {
             scrcpy.StopService();
         }
         try {
-            // 可能会导致重复解绑，所以捕获异常
+            // Unbinding might happen twice, so catch the exception
             unbindService(serviceConnection);
         } catch (Exception e) {
             e.printStackTrace();
@@ -165,7 +165,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         if (scrcpy != null) {
             scrcpy = null;
         }
-        // 退出连接，需要处理额外的事件
+        // Handle additional cleanup when leaving the connection
         connectExitExt(userDisconnect);
     }
 
@@ -182,7 +182,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
             screenHeight = savedInstanceState.getInt("screenHeight");
             screenWidth = savedInstanceState.getInt("screenWidth");
         }
-        // 读取屏幕是横屏、还是竖屏
+        // Determine whether the screen is currently landscape or portrait
         landscape = getApplication().getResources().getConfiguration().orientation
                 != Configuration.ORIENTATION_PORTRAIT;
         if (first_time) {
@@ -199,9 +199,9 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         if (savedInstanceState != null) {
             Log.i("Scrcpy", "outState: " + savedInstanceState.getBoolean("from_save_instance"));
         }
-        // 从销毁状态恢复
+        // Restore from a destroyed state
         if (savedInstanceState == null || !savedInstanceState.getBoolean("from_save_instance", false)) {
-            // 初次进入 app
+            // First time entering the app
             if (getIntent() != null && getIntent().getExtras() != null) {
                 headlessMode = getIntent().getExtras().getBoolean(START_REMOTE, headlessMode);
             }
@@ -225,8 +225,8 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         outState.putBoolean("from_save_instance", true);
         outState.putBoolean("first_time", first_time);
         outState.putBoolean("landscape", landscape);
-        outState.putBoolean("headlessMode", headlessMode);  // 第二次进入时，intent会被重置，需要保存状态
-        // 小窗模式、半屏模式切换避免恢复横竖屏，会导致黑屏（因为scrcpy恢复的resume只允许一次连接）
+        outState.putBoolean("headlessMode", headlessMode);  // Intent resets on the second entry, so persist the state
+        // Avoid restoring orientation when toggling between floating/half-screen to prevent black screens (resume only allows a single reconnection)
         // outState.putBoolean("resumeScrcpy", resumeScrcpy);
         outState.putInt("screenHeight", screenHeight);
         outState.putInt("screenWidth", screenWidth);
@@ -242,7 +242,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         final View decorView = getWindow().getDecorView();
         decorView.setSystemUiVisibility(View.VISIBLE);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        landscape = false;  // 将模式重新置为 竖屏，模式不正确将导致连接黑屏
+        landscape = false;  // Reset to portrait; incorrect mode can lead to a black screen
         setContentView(R.layout.activity_main);
         final Button startButton = findViewById(R.id.button_start);
         // final Button floatButton = findViewById(R.id.button_start_float);
@@ -269,7 +269,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
             showListPopulWindow(editText);
         });
 
-        // 无头模式，实际上要隐藏掉所有控件，否则会被显示出 ip 地址
+        // In headless mode, hide all controls to avoid revealing the IP address
         if (headlessMode) {
             View scrollView = findViewById(R.id.main_scroll_view);
             if (scrollView != null) {
@@ -279,19 +279,19 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
     }
 
     private void showListPopulWindow(EditText mEditText) {
-        String[] list = getHistoryList();//要填充的数据
-        if (list.length == 0) {  // 如果list为空，则使用本机填充一个
+        String[] list = getHistoryList(); // Data to populate the popup
+        if (list.length == 0) {  // Default to the local host if the list is empty
             list = new String[]{"127.0.0.1"};
         }
         final ListPopupWindow listPopupWindow;
         listPopupWindow = new ListPopupWindow(this);
-        listPopupWindow.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, list));//用android内置布局，或设计自己的样式
-        listPopupWindow.setAnchorView(mEditText);//以哪个控件为基准，在该处以mEditText为基准
+        listPopupWindow.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, list)); // Use the built-in layout or customize if needed
+        listPopupWindow.setAnchorView(mEditText); // Anchor the popup to the EditText
         listPopupWindow.setModal(true);
         listPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
         String[] finalList = list;
-        listPopupWindow.setOnItemClickListener(new AdapterView.OnItemClickListener() {//设置项点击监听
+        listPopupWindow.setOnItemClickListener(new AdapterView.OnItemClickListener() { // Handle item selection
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 mEditText.setText(finalList[i]);
@@ -305,7 +305,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
 //    private void showDisplayWindow() {
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 //            if (!Settings.canDrawOverlays(this)) {
-//                //启动Activity让用户授权
+//                // Launch an activity so the user can grant the permission
 //                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
 //                startActivity(intent);
 //                return;
@@ -503,11 +503,11 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
     }
 
     /**
-     * 保存设备历史连接记录
+     * Save the device's connection history.
      */
     private boolean saveHistory(String device) {
         if (headlessMode) {
-            // 无头模式不保存记录
+            // Skip saving history when running headless
             return false;
         }
         JSONArray historyJson = new JSONArray();
@@ -520,7 +520,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            // 最多记录 30 个
+            // Store at most 30 entries
             int count = Math.min(historyList.length, 30);
             for (int i = 0; i < count; i++) {
                 if (!historyList[i].equals(device)) {
@@ -617,7 +617,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
             first_time = false;
         }
         try {
-            // 可能会导致重复解绑，所以捕获异常
+            // Unbinding might happen twice, so catch the exception
             unbindService(serviceConnection);
         } catch (Exception e) {
             e.printStackTrace();
@@ -635,8 +635,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
 
     @Override
     public void errorDisconnect() {
-        // 必须退出
-        // 退出重连
+        // Force an exit and offer to reconnect
         Dialog.displayDialog(this, getString(R.string.disconnect),
                 getString(R.string.disconnect_ask), () -> {
                     if (serviceBound) {
@@ -655,7 +654,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         if (serviceBound) {
             scrcpy.pause();
             resumeScrcpy = true;
-            // 返回到主页面，属于用户主动断开场景
+            // Returning to the main screen counts as a manual disconnect
             showMainView(true);
             first_time = true;
         }
@@ -674,7 +673,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
                             | View.SYSTEM_UI_FLAG_FULLSCREEN
                             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
             if (serviceBound) {
-                // 黑屏无需修复， 因为只是自带的配置问题
+                // A black screen here is due to configuration and does not require fixing
                 linearLayout = findViewById(R.id.container1);
                 scrcpy.resume();
             }
@@ -683,7 +682,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
             resumeScrcpy = false;
             connectScrcpyServer(PreUtils.get(context, Constant.CONTROL_REMOTE_ADDR, ""));
         }
-        resumeScrcpy = false;  // 两处都要resumeScrcpy设置为false
+        resumeScrcpy = false;  // Reset resumeScrcpy to false in both code paths
         result_of_Rotation = false;
     }
 
@@ -703,7 +702,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
                 if (serviceBound) {
                     showMainView(true);
                     first_time = true;
-                    errorCount = 0;  // 主动断开连接，将错误计数重置为 0
+                    errorCount = 0;  // Manual disconnects reset the error counter
                 } else {
                     finish();
                 }
@@ -717,13 +716,13 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         if (sensorEvent.sensor.getType() == Sensor.TYPE_PROXIMITY) {
             if (sensorEvent.values[0] == 0) {
                 if (serviceBound) {
-                    // 该事件会使远程手机 按下电源键，触发方式：按住距离传感器，然后点击屏幕即可锁屏
-                    // 发送横竖屏会导致抬起事件无效
+                    // This event presses the remote power button; cover the proximity sensor and tap the screen to lock
+                    // Sending orientation changes would make the release event invalid
                     // scrcpy.sendKeyevent(28);
                 }
             } else {
                 if (serviceBound) {
-                    // 发送横竖屏会导致抬起事件无效
+                    // Sending orientation changes would make the release event invalid
                     // scrcpy.sendKeyevent(29);
                 }
             }
@@ -737,7 +736,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
 
     private void connectScrcpyServer(String serverAdr) {
         if (!TextUtils.isEmpty(serverAdr)) {
-            saveHistory(serverAdr);  // 保存到历史记录
+            saveHistory(serverAdr);  // Store in the connection history
             String[] serverInfo = Util.getServerHostAndPort(serverAdr);
             String serverHost = serverInfo[0];
             int serverPort = Integer.parseInt(serverInfo[1]);
@@ -773,7 +772,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
                         videoBitrate, Math.max(screenHeight, screenWidth)) == 0) {
                     ThreadUtils.post(() -> {
                         if (!MainActivity.this.isFinishing()) {
-                            // 进入主线程
+                            // Execute on the main thread
                             Log.e("Scrcpy: ", "from startButton");
                             start_screen_copy_magic();
                         }
@@ -791,7 +790,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
     }
 
     /**
-     * 连接成功了，而且成功的显示了画面出来
+     * Called once the connection succeeds and video is visible.
      */
     protected void connectSuccessExt() {
         errorCount = 0;
@@ -802,27 +801,27 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
     }
 
     /**
-     * 连接失败的额外处理
+     * Additional processing when the connection fails.
      */
     protected void connectExitExt(boolean userDisconnect) {
-        if (!userDisconnect) {  // userDisconnect : 用户主动断开连接
+        if (!userDisconnect) {  // userDisconnect represents a manual disconnect
             errorCount += 1;
             // errorCount = 0;
-            Log.i("Scrcpy", "连接错误次数: " + errorCount);
-            // 错误 3 次，则重启 adb 服务
+            Log.i("Scrcpy", "Connection error count: " + errorCount);
+            // Restart the adb service after three errors
             App.startAdbServer();
         }
-        // 如果是无头模式，自行弹出重连选项
+        // In headless mode, show a reconnect prompt automatically
         if (headlessMode && !resumeScrcpy && !result_of_Rotation) {
-            // 非用户主动断开、非页面切换、非横竖屏切换，才会自动弹出断连提示
+            // Only show the disconnect dialog if it was not manual, not a page switch, and not an orientation change
             if (!userDisconnect) {
                 Dialog.displayDialog(this, getString(R.string.connect_faild),
                         getString(R.string.connect_faild_ask), () -> {
-                            // 重试连接
+                            // Retry the connection
                             connectScrcpyServer(PreUtils.get(context, Constant.CONTROL_REMOTE_ADDR, ""));
                         }, () -> {
 
-                            // 取消重试
+                            // Cancel the retry
                             finishAndRemoveTask();
                         });
             } else {

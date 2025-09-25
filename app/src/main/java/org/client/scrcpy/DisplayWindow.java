@@ -169,11 +169,11 @@ public class DisplayWindow extends FrameLayout {
         post(new Runnable() {
             @Override
             public void run() {
-                //根据比例设置高度
+                // Set the height based on the aspect ratio
                 ViewGroup.LayoutParams lp = container.getLayoutParams();
                 float rate = (float)w/h;
                 Log.d(TAG, "setRemote: "+w+","+h+" %->"+rate);
-                //高度屏幕的80%，然后宽度按比例
+                // Use roughly 80% of the screen height and scale the width proportionally
                 lp.height = (int)(this_dev_height * 0.95 - actionbar.getMeasuredHeight() - header.getMeasuredHeight()-50);
                 lp.width = (int) (lp.height * rate);
                 container.setLayoutParams(lp);

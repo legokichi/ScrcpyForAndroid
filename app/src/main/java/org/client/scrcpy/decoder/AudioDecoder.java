@@ -88,7 +88,7 @@ public class AudioDecoder {
                 }
             }
             MediaFormat format = MediaFormat.createAudioFormat(MIMETYPE_AUDIO_AAC, SAMPLE_RATE, 2);
-            // 设置比特率
+            // Set the bitrate
             format.setInteger(MediaFormat.KEY_BIT_RATE, 128000);
             // adts 0
             // format.setInteger(MediaFormat.KEY_IS_ADTS, 1);
@@ -103,9 +103,9 @@ public class AudioDecoder {
             mCodec.start();
             mIsConfigured.set(true);
 
-            // 初始化音频播放器
+            // Initialize the audio player
             initAudioTrack();
-            // audio track 启动
+            // Start the AudioTrack
             audioTrack.play();
         }
 
@@ -145,7 +145,7 @@ public class AudioDecoder {
                             }
                             // Log.e("Scrcpy", "Audio success get frame: " + index);
 
-                            // 读取 pcm 数据，写入 audiotrack 播放
+                            // Read the PCM data and write it to the AudioTrack for playback
                             ByteBuffer outputBuffer = mCodec.getOutputBuffer(index);
                             if (outputBuffer != null) {
                                 byte[] data = new byte[info.size];

@@ -21,7 +21,7 @@ public final class ThreadUtils {
     private static final Object listLock = new Object();
     private static boolean timerExit = true;
     private static boolean RUNNING = true;
-    // 后台线程（注意：不要死锁了，否则导致其它页面卡死）
+    // Background thread (avoid deadlocks or other screens may freeze)
     private static volatile Handler asyncHandler;
 
     static {
@@ -36,7 +36,7 @@ public final class ThreadUtils {
         Thread mainThread = new Thread(() -> {
             Looper.prepare();
             asyncHandler = new Handler(Looper.myLooper());
-            // 线程优先级
+            // Raise the thread priority
             Process.setThreadPriority(Process.THREAD_PRIORITY_MORE_FAVORABLE);
             while (RUNNING) {
                 try {
@@ -50,36 +50,32 @@ public final class ThreadUtils {
     }
 
     /**
-     * 异步执行一个任务, 所有任务都在同一个线程中执行
+     * Execute a task asynchronously on a dedicated thread.
      * <p>
-     * 优点：为了进行程序优化，许多任务都采用异步执行
-     * 但是异步执行时，不同的线程可能导致数据、状态等不同
-     * 如果采用单个线程，将能够有效避免这些问题
-     * <p>
-     * 经过实际测试，采用协程开启任务和采用异步 Handler 的方式
-     * Handler 更有优势，如果是单个任务，建议采用 Handler
-     * <p>
-     * GlobalScop 开启一个协程约 1ms ，Handler post 任务耗时<0.1ms
+     * Using a single worker thread avoids cross-thread state issues while still
+     * benefiting from asynchronous execution. Benchmarking shows a Handler post
+     * takes under 0.1 ms (versus ~1 ms for launching a coroutine), so this
+     * approach is preferred for lightweight tasks.
      *
-     * @param r 任务对象
+     * @param r task to run
      */
     public static void workPost(Runnable r) {
         //noinspection StatementWithEmptyBody
-        while (asyncHandler == null) {  // 等待初始化
+        while (asyncHandler == null) {  // Wait for initialization
         }
         asyncHandler.post(r);
     }
 
     public static void workPostDelay(Runnable r, long time) {
         //noinspection StatementWithEmptyBody
-        while (asyncHandler == null) {  // 等待初始化
+        while (asyncHandler == null) {  // Wait for initialization
         }
         asyncHandler.postDelayed(r, time);
     }
 
     public static void removeWork(Runnable r) {
         //noinspection StatementWithEmptyBody
-        while (asyncHandler == null) {  // 等待初始化
+        while (asyncHandler == null) {  // Wait for initialization
         }
         asyncHandler.removeCallbacks(r);
     }
@@ -88,7 +84,7 @@ public final class ThreadUtils {
         mHandler.postDelayed(r, time);
     }
 
-    public static void post(Runnable r) {  //主线程
+    public static void post(Runnable r) {  // Run on the main thread
         mHandler.post(r);
     }
 
@@ -143,7 +139,7 @@ public final class ThreadUtils {
                 if (runnable.equals(imTmp.getRunnable())) {
                     RUNNABLE_LIST.remove(index);
                     imTmp.recycle();
-                    index--;  //移除后下标减 1
+                    index--;  // Adjust index after removal
                 }
             }
         }
@@ -167,12 +163,12 @@ public final class ThreadUtils {
     private static final TimerRunnable TIMER_RUNNABLE = new TimerRunnable();
 
     /**
-     * 用来运行单个任务的线程
-     * 注意不要阻塞此线程的执行，否则可能导致卡死等问题
+     * Single-thread worker used to run queued tasks.
+     * Avoid blocking this thread to prevent stalls.
      */
     public static final class SignelThread extends Thread {
 
-        // 后台线程（注意：不要死锁了，否则导致其它页面卡死）
+        // Background thread (avoid deadlocks or other screens may freeze)
         private final Object WORK_LOCK = new Object();
         private RunnableIm workLink;
         private boolean exit = false;
@@ -183,7 +179,7 @@ public final class ThreadUtils {
                 Runnable runnable = null;
                 synchronized (WORK_LOCK) {
                     RunnableIm runnableIm = workLink;
-                    // 如果队列为空，则一直等待，直到唤醒
+                    // Wait until notified when the queue is empty
                     if (runnableIm == null) {
                         try {
                             WORK_LOCK.wait();
@@ -203,10 +199,9 @@ public final class ThreadUtils {
                         }
                     }
                 }
-                // 如果放到同步锁的外面，执行速度会慢一些
-                // 因为会被同步锁阻塞到 add 和 remove
+                // Running outside the synchronized block is faster because add/remove won't block it
                 if (runnable != null) {
-                    try { // 执行线程方法
+                    try { // Execute the runnable
                         runnable.run();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -240,25 +235,24 @@ public final class ThreadUtils {
             synchronized (WORK_LOCK) {
                 long currentSystemTime = System.currentTimeMillis();
                 RunnableIm runnableIm = RunnableIm.obtain(delay, runnable, currentSystemTime);
-                // 添加到队列中
+                // Insert into the queue
                 if (workLink == null) {
                     workLink = runnableIm;
-                    // 改变了队列头部需要重新释放锁
+                    // Notifying is required when the head of the queue changes
                     WORK_LOCK.notify();
                     return;
                 }
                 long curWaitTime = runnableIm.time;
                 RunnableIm linkRunnableIm = workLink;
                 long curLinkWaitTime = linkRunnableIm.getTime() - (currentSystemTime - linkRunnableIm.getSysTime());
-                // 如果队列头部的执行时间，比需要添加的线程执行要快
-                // 则循环查找到队列的末尾，插入到队列中部
-                // 如果新加入的执行速度更快，则直接添加到头部
+                // If the head executes sooner than the new task, walk the list to insert later
+                // Otherwise place the new task at the head
                 if (curLinkWaitTime <= curWaitTime) {
                     while (linkRunnableIm.nextRunnableIm != null) {
                         RunnableIm tmpIm = linkRunnableIm.nextRunnableIm;
                         curLinkWaitTime = tmpIm.getTime() - (currentSystemTime - tmpIm.getSysTime());
-                        // 查找链表下一个，如果下一个节点的执行时机更晚，则跳出链表查找
-                        // 然后将新的插入到当前节点
+                        // Find the insertion point where the next task is scheduled later
+                        // and insert the new task before it
                         if (curLinkWaitTime > curWaitTime) {
                             break;
                         } else {
@@ -266,14 +260,13 @@ public final class ThreadUtils {
                         }
                     }
                     RunnableIm tmpRunnableIm = linkRunnableIm.nextRunnableIm;
-                    // 插入到下一个队列中
+                    // Insert into the next position
                     linkRunnableIm.nextRunnableIm = runnableIm;
                     runnableIm.nextRunnableIm = tmpRunnableIm;
                 } else {
                     workLink = runnableIm;
                     runnableIm.nextRunnableIm = linkRunnableIm;
-                    // 改变了队列头部需要重新释放锁
-                    // 其他时刻，也就是插入到队列中间无需释放锁
+                    // Notify only when the head changes; inserting mid-queue does not require it
                     if (linkRunnableIm != workLink) {
                         WORK_LOCK.notify();
                     }
@@ -292,15 +285,15 @@ public final class ThreadUtils {
                 }
                 RunnableIm linkRunnableIm = workLink;
                 if (linkRunnableIm.runnable == runnable) {
-                    // 指向下一个
+                    // Advance to the next node
                     workLink = linkRunnableIm.nextRunnableIm;
-                    // 改变了队列头部需要重新释放锁
+                    // Notify because the head changed
                     WORK_LOCK.notify();
                     return true;
                 }
                 while (linkRunnableIm.nextRunnableIm != null) {
                     RunnableIm tmpRunableIm = linkRunnableIm.nextRunnableIm;
-                    // 从队列中移除掉
+                    // Remove from the queue
                     if (tmpRunableIm.runnable == runnable) {
                         linkRunnableIm.nextRunnableIm = tmpRunableIm.nextRunnableIm;
                         return true;
@@ -314,7 +307,7 @@ public final class ThreadUtils {
     }
 
     /**
-     * 使用该线程实现定时器功能
+     * Timer thread that schedules delayed tasks.
      */
     private static final class TimerRunnable implements Runnable {
 
@@ -324,7 +317,7 @@ public final class ThreadUtils {
             while (!threadCache.isShutdown()) {
                 synchronized (listLock) {
                     if (RUNNABLE_LIST.size() == 0) {
-                        //等待 60s，如果调度队列还是 为 0 ，则退出调度线程
+                        // Wait 60 seconds; if nothing is scheduled, exit the timer thread
                         if (waitQuere) {
                             timerExit = true;
                             return;
@@ -344,10 +337,10 @@ public final class ThreadUtils {
                     if (sleepTime <= 0) {
                         RUNNABLE_LIST.remove(minImIndex);
                         execute(runnableIm.getRunnable());
-                        runnableIm.recycle();  //标志为销毁，在下次运行时执行
+                        runnableIm.recycle();  // Mark as recycled for the next run
                         continue;
                     }
-                    ThreadWait(sleepTime);//在线程等待指定时间后，执行 任务
+                    ThreadWait(sleepTime); // Sleep until it is time to execute the task
                 }
             }
         }
@@ -362,19 +355,19 @@ public final class ThreadUtils {
     }
 
     /**
-     * 获取线程列表中最小的等待时间
+     * Find the index of the runnable with the smallest remaining wait time.
      *
-     * @return 存储线程的类
+     * @return index of the runnable to run next, or -1 if none
      */
     private static int getMinTimeImIndex(long time) {
         int minIndex = -1;
         RunnableIm imMin = null;
         for (int index = 0; index < RUNNABLE_LIST.size(); index++) {
-            if (minIndex == -1) {  //将下标指向 0
+            if (minIndex == -1) {  // Initialize to the first element
                 minIndex = index;
                 imMin = RUNNABLE_LIST.get(index);
             } else {
-                //如果遍历的时候找到一个更小的，则重新指向这个最小的
+                // Track the runnable with the shortest remaining delay
                 RunnableIm imTmp = RUNNABLE_LIST.get(index);
                 if ((imTmp.getTime() - (time - imTmp.getSysTime())) < (imMin.getTime() - (time - imMin.getSysTime()))) {
                     minIndex = index;

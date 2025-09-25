@@ -106,9 +106,9 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     /**
-     * 开启音频流转发
+     * Starts forwarding the audio stream.
      *
-     * @param outputStream
+     * @param outputStream destination for encoded audio frames
      */
     private void startAudioCapture(OutputStream outputStream) {
         new Thread(new Runnable() {
@@ -177,7 +177,7 @@ public class ScreenEncoder implements Device.RotationListener {
                     Ln.i("Retrying...");
                     alive = true;
                 } finally {
-                    Log.d("ScreenCapture", "帧处理 finally 退出了");
+                    Log.d("ScreenCapture", "Frame processing exited in finally block");
                     codec.stop();
                     // destroyDisplay(display);
                     codec.release();
@@ -187,7 +187,7 @@ public class ScreenEncoder implements Device.RotationListener {
                 }
             } while (alive);
         } finally {
-            Log.d("ScreenCapture", "streamScreen 退出了");
+            Log.d("ScreenCapture", "streamScreen exited");
             capture.release();
             // device.setRotationListener(null);
         }

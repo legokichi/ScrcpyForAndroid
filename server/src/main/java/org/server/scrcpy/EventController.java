@@ -110,7 +110,7 @@ public class EventController {
 //                        MotionEvent event = MotionEvent.obtain(lastMouseDown, now, action, 1, pointerProperties, pointerCoords, 0, button, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
 //                        injectEvent(event);
 
-                        // 为支持多点触控，新增 buffer[4] 这个字节
+                        // Add buffer[4] to support multi-touch
                         Point point = new Point(buffer[2], buffer[3]);
                         Point newpoint = device.NewgetPhysicalPoint(point);
                         injectTouch(action, buffer[4], newpoint, buffer[1]);
@@ -122,9 +122,9 @@ public class EventController {
 
 
     /**
-     * 为尽快支持多点触控，暂时去除原版 scrcpy 中的鼠标按下功能，可能导致鼠标控制出现问题
-     * TODO： 后续需要参照原版 scrcpy 实现鼠标操作
-     * 详情参考：scrcpy/server/src/main/java/com/genymobile/scrcpy/control/Controller.java
+     * Temporarily removes mouse press handling from upstream scrcpy to prioritize multi-touch support.
+     * TODO: Implement mouse interactions following the upstream scrcpy controller.
+     * See: scrcpy/server/src/main/java/com/genymobile/scrcpy/control/Controller.java
      */
     private boolean injectTouch(int action, long pointerId, Point point, int button) {
         long now = SystemClock.uptimeMillis();
@@ -172,16 +172,16 @@ public class EventController {
             }
         } else {
             // secondary pointers must use ACTION_POINTER_* ORed with the pointerIndex
-            // 与原版 scrcpy 相比，Android 传输的触控信息已经包含 ACTION_POINTER_UP ，此处需要新增兼容，否则多点触控会出现异常
+            // Android touch data already carries ACTION_POINTER_UP, unlike upstream scrcpy, so add compatibility to avoid multi-touch issues
             if (action == MotionEvent.ACTION_UP || actionType == MotionEvent.ACTION_POINTER_UP) {
                 action = MotionEvent.ACTION_POINTER_UP | (pointerIndex << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
-                // Ln.w("按钮 Pointer 抬起");
+                // Ln.w("Pointer button released");
             } else if (action == MotionEvent.ACTION_DOWN || actionType == MotionEvent.ACTION_POINTER_DOWN) {
                 action = MotionEvent.ACTION_POINTER_DOWN | (pointerIndex << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
-                // Ln.w("按钮 Pointer 按下");
+                // Ln.w("Pointer button pressed");
             }
         }
-        // Ln.w("按钮事件，" + action + " ,lastMouseDown: " + lastMouseDown + " , now: " + now + " , pointerId: " + pointerId + " pointerCount: " + pointerCount);
+        // Ln.w("Button event, " + action + " ,lastMouseDown: " + lastMouseDown + " , now: " + now + " , pointerId: " + pointerId + " pointerCount: " + pointerCount);
 
         /* If the input device is a mouse (on API >= 23):
          *   - the first button pressed must first generate ACTION_DOWN;

@@ -45,7 +45,7 @@ public final class DroidConnection implements Closeable {
         if (!socket.getInetAddress().toString().equals(ip)) {
             Ln.w("socket connect address != " + ip);
         }
-        // 判断 socket 有一个正确的地址
+        // Ensure the socket reports a valid address
         if (!socket.getInetAddress().toString().isEmpty()) {
             connection = new DroidConnection(socket);
         }
@@ -64,10 +64,10 @@ public final class DroidConnection implements Closeable {
 
 
     /**
-     * TODO 需要根据原版 scrcpy 进行改造消息传送，目前仅支持 触控消息
+     * TODO Align message transport with upstream scrcpy; currently only touch events are supported.
      *
-     * @return
-     * @throws IOException
+     * @return decoded event payload
+     * @throws IOException if reading from the socket fails
      */
     public int[] NewreceiveControlEvent() throws IOException {
 
@@ -89,4 +89,3 @@ public final class DroidConnection implements Closeable {
     }
 
 }
-

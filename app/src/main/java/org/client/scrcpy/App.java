@@ -28,7 +28,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
     @Override
     public void onCreate() {
         super.onCreate();
-        init();  // 初始化id 数据
+        init();  // Initialize ID data
         startAdbServer();
     }
 
@@ -47,7 +47,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
     }
 
     public static Activity getCurActivity() {
-        // 获取最新的一个 activity
+        // Retrieve the most recently created activity
         try {
             return activityList.getFirst();
         } catch (Exception ignore) {
@@ -56,20 +56,20 @@ public class App extends Application implements Application.ActivityLifecycleCal
     }
 
     /**
-     * 启动 adb 服务
+     * Start the adb service.
      */
     public static void startAdbServer() {
         if (startAdbRun) {
-            // 当前正在启动过程中，退出
+            // Exit if startup is already in progress
             return;
         }
         startAdbRun = true;
         ThreadUtils.execute(() -> {
-            // 启动 adb 服务
+            // Start the adb service
             Log.i("Scrcpy", "start adb server ...");
             adbCmd("kill-server");
             adbCmd("start-server");
-            // 启动完毕，重置为false，使其下次可以被重新调用
+            // Reset the flag once startup finishes so it can run again later
             startAdbRun = false;
         });
     }

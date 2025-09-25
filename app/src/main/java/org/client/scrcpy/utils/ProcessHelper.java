@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 执行命令，且命令会不断的在后台运行，直到调用 callback close
+ * Execute a command that keeps running in the background until the callback closes it.
  */
 public class ProcessHelper {
     protected volatile boolean isClose;
@@ -46,7 +46,7 @@ public class ProcessHelper {
                 e.printStackTrace();
             }
         } else {
-            // 进程已经被中断，不再允许其写入数据
+            // The process has been interrupted, refuse further writes
             throw new RuntimeException("process is close");
         }
     }
@@ -69,7 +69,7 @@ public class ProcessHelper {
         try {
             process = Runtime.getRuntime().exec(command);
             os = process.getOutputStream();
-            // 读取输出
+            // Read standard output
             successResult = new BufferedReader(new InputStreamReader(
                     process.getInputStream()));
             errorResult = new BufferedReader(new InputStreamReader(
@@ -77,7 +77,7 @@ public class ProcessHelper {
             if (statuCallback != null) {
                 statuCallback.processOpen(this, process, os);
             }
-            // 关闭流之后，销毁 Process
+            // After closing the streams, destroy the process
             Thread outputThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -97,7 +97,7 @@ public class ProcessHelper {
                         }
                     }
                     streamClose();
-                    // 关闭流之后，销毁 Process
+                    // After closing the streams, destroy the process
                     if (process != null) {
                         process.destroy();
                     }
@@ -106,7 +106,7 @@ public class ProcessHelper {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             if (process.isAlive()) {
                                 try {
-                                    // 等 1s 后看进程是否结束
+                                    // Wait 1 second to see if the process exits
                                     if (process.waitFor(1, TimeUnit.SECONDS)) {
                                         exitCode = process.exitValue();
                                     }
@@ -152,7 +152,7 @@ public class ProcessHelper {
             outputThread.start();
             errorThread.start();
         } catch (Exception e) {
-            // 如果启动过程发生异常，将其置为关闭状态
+            // Mark as closed if startup throws an exception
             this.isClose = true;
             if (statuCallback != null) {
                 statuCallback.processError(this, process, e);

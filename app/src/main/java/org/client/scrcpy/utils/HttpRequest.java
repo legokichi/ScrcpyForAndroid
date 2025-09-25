@@ -10,11 +10,11 @@ import java.util.Map;
 import java.util.zip.GZIPInputStream;
 public class HttpRequest {
     /**
-     * 向指定URL发送GET方法的请求
+     * Send a GET request to the specified URL.
      *
-     * @param url    发送请求的URL
-     * @param params 请求参数，一个 Map 列表
-     * @return URL 所代表远程资源的响应结果
+     * @param url    target URL
+     * @param params optional query parameters
+     * @return response content
      */
     public static String sendGet(String url, Map<String, String> params) {
         StringBuilder result = new StringBuilder();
@@ -22,18 +22,18 @@ public class HttpRequest {
         try {
             String urlNameString = url + (params == null ? "" : ("?" + Util.getParamUrl(params)));
             URL realUrl = new URL(urlNameString);
-            // 打开和URL之间的连接
+            // Open the connection to the URL
             HttpURLConnection connection = (HttpURLConnection) realUrl.openConnection();
             connection.setConnectTimeout(5000);
             connection.setReadTimeout(5000);
-            // 设置通用的请求属性
+            // Configure default request headers
             connection.setRequestProperty("accept", "*/*");
             connection.setRequestProperty("connection", "Keep-Alive");
             connection.setRequestProperty("user-agent",
                     "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
-            // 自动重定向
+            // Enable automatic redirects
             connection.setInstanceFollowRedirects(true);
-            // 建立实际的连接
+            // Establish the connection
             connection.connect();
             if (connection.getContentEncoding() != null &&
                     !"".equals(connection.getContentEncoding())) {
@@ -45,13 +45,13 @@ public class HttpRequest {
             if (null == is) {
                 is = connection.getInputStream();
             }
-            // 获取所有响应头字段
+            // Read all response headers
             Map<String, List<String>> map = connection.getHeaderFields();
-            // 遍历所有的响应头字段
+            // Iterate over the response headers
             // for (String key : map.keySet()) {
             //     System.out.println(key + "--->" + map.get(key));
             // }
-            // 手动处理重定向
+            // Handle redirects manually when necessary
             if (connection.getResponseCode() >= 300 && connection.getResponseCode() < 400) {
                 String location = "";
                 if (map.get("Location") != null && !map.get("Location").isEmpty()) {
@@ -67,7 +67,7 @@ public class HttpRequest {
                     return sendGet(location, null);
                 }
             }
-            // 定义 BufferedReader输入流来读取URL的响应
+            // Read the response via a BufferedReader
             BufferedReader in = new BufferedReader(new InputStreamReader(is));
             String line = "";
             while ((line = in.readLine()) != null) {
@@ -77,10 +77,10 @@ public class HttpRequest {
                 result.append(line);
             }
         } catch (Exception e) {
-            System.out.println("发送GET请求出现异常！" + e);
+            System.out.println("GET request failed: " + e);
             e.printStackTrace();
         }
-        // 使用finally块来关闭输入流
+        // Always close the input stream
         finally {
             try {
                 if (is != null) {
@@ -94,11 +94,11 @@ public class HttpRequest {
     }
 
     /**
-     * 向指定 URL 发送POST方法的请求
+     * Send a POST request to the specified URL.
      *
-     * @param url   发送请求的 URL
-     * @param param 请求参数，请求参数应该是 name1=value1&name2=value2 的形式。
-     * @return 所代表远程资源的响应结果
+     * @param url   target URL
+     * @param param POST body, e.g. name1=value1&name2=value2
+     * @return response content
      */
     public static String sendPost(String url, String param) {
         PrintWriter out = null;
@@ -106,23 +106,23 @@ public class HttpRequest {
         String result = "";
         try {
             URL realUrl = new URL(url);
-            // 打开和URL之间的连接
+            // Open the connection to the URL
             URLConnection conn = realUrl.openConnection();
-            // 设置通用的请求属性
+            // Configure default request headers
             conn.setRequestProperty("accept", "*/*");
             conn.setRequestProperty("connection", "Keep-Alive");
             conn.setRequestProperty("user-agent",
                     "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
-            // 发送POST请求必须设置如下两行
+            // Required for POST requests
             conn.setDoOutput(true);
             conn.setDoInput(true);
-            // 获取URLConnection对象对应的输出流
+            // Obtain the output stream
             out = new PrintWriter(conn.getOutputStream());
-            // 发送请求参数
+            // Send the request body
             out.print(param);
-            // flush输出流的缓冲
+            // Flush the output buffer
             out.flush();
-            // 定义BufferedReader输入流来读取URL的响应
+            // Read the response via a BufferedReader
             in = new BufferedReader(
                     new InputStreamReader(conn.getInputStream()));
             String line;
@@ -130,10 +130,10 @@ public class HttpRequest {
                 result += line;
             }
         } catch (Exception e) {
-            System.out.println("发送 POST 请求出现异常！" + e);
+            System.out.println("POST request failed: " + e);
             e.printStackTrace();
         }
-        //使用finally块来关闭输出流、输入流
+        // Always close the streams
         finally {
             try {
                 if (out != null) {

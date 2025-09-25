@@ -31,14 +31,14 @@ public class FileUtils {
     public static String getAssetsData(Context context, String fileName) {
         String result = "";
         try {
-            //获取输入流
+            // Obtain the input stream
             InputStream mAssets = context.getAssets().open(fileName);
 
-            //获取文件的字节数
+            // Determine the file length in bytes
             int lenght = mAssets.available();
-            //创建byte数组
+            // Allocate a byte array
             byte[] buffer = new byte[lenght];
-            //将文件中的数据写入到字节数组中
+            // Read the file contents into the byte array
             mAssets.read(buffer);
             mAssets.close();
             result = new String(buffer);
@@ -50,13 +50,13 @@ public class FileUtils {
 
     public static byte[] getAssetsBytes(Context context, String fileName) {
         try {
-            //获取输入流
+            // Obtain the input stream
             InputStream mAssets = context.getAssets().open(fileName);
-            //获取文件的字节数
+            // Determine the file length in bytes
             int lenght = mAssets.available();
-            //创建byte数组
+            // Allocate a byte array
             byte[] buffer = new byte[lenght];
-            //将文件中的数据写入到字节数组中
+            // Read the file contents into the byte array
             mAssets.read(buffer);
             mAssets.close();
             return buffer;
@@ -66,10 +66,10 @@ public class FileUtils {
     }
 
     /**
-     * 从assets目录中复制整个文件夹内容,考贝到 /data/data/包名/files/目录中
+     * Copy an entire directory from assets into /data/data/<package>/files/.
      *
-     * @param context  activity 使用CopyFiles类的Activity
-     * @param filePath String  文件路径,如：/assets/aa
+     * @param context activity using the CopyFiles helper
+     * @param filePath source path such as /assets/aa
      */
     public static boolean copyAssetsDir2Phone(Context context, String filePath, String toPath) {
 
@@ -78,14 +78,14 @@ public class FileUtils {
             fileList = context.getAssets().list(filePath);
         } catch (IOException ignore) {
         }
-        if (fileList != null && fileList.length > 0) {//如果是目录
+        if (fileList != null && fileList.length > 0) { // Handle directory entries
             boolean suc = true;
             for (String fileName : fileList) {
                 String nextFilePath = filePath + File.separator + fileName;
                 suc = copyAssetsDir2Phone(context, nextFilePath, toPath) && suc;
             }
             return suc;
-        } else {//如果是文件
+        } else { // Handle file entries
             InputStream inputStream = null;
             FileOutputStream fos = null;
             try {
@@ -123,10 +123,10 @@ public class FileUtils {
 
     public boolean copyFileToPath(String fromfile, String tofile) {
         File sourceFile = new File(fromfile);
-        if (!sourceFile.exists() || !sourceFile.canRead()) { // 有权限且文件存在
+        if (!sourceFile.exists() || !sourceFile.canRead()) { // Ensure we have permission and the file exists
             return false;
         }
-        if (sourceFile.isDirectory()) { // 如果是文件夹，迭代
+        if (sourceFile.isDirectory()) { // Recursively handle directories
             File[] files = sourceFile.listFiles();
             boolean suc = true;
             for (File file : files) {
@@ -134,7 +134,7 @@ public class FileUtils {
             }
             return suc;
         } else {
-            return copyFile(fromfile, tofile); // 如果是文件的话，直接传入路径复制文件
+            return copyFile(fromfile, tofile); // For files, copy directly
         }
     }
 
@@ -143,10 +143,10 @@ public class FileUtils {
         File toFile = new File(toPath);
         FileInputStream inputStream = null;
         FileOutputStream outputStream = null;
-        if (!file.exists() || !file.canRead()) { // 有权限且文件存在
+        if (!file.exists() || !file.canRead()) { // Ensure we have permission and the file exists
             return false;
         }
-        if (!toFile.exists()) { // 如果文件不存在
+        if (!toFile.exists()) { // Create the destination if it does not exist
             try {
                 File dir = new File(toFile.getParent());
                 if ((!dir.exists()) && !dir.mkdirs()) return false;
@@ -181,11 +181,11 @@ public class FileUtils {
     }
 
     /**
-     * 将两个文件合并成一个新文件
+     * Merge two files into a new target file.
      *
-     * @param path
-     * @param toPath
-     * @return
+     * @param path path to the first source file
+     * @param toPath destination path for the merged file
+     * @return {@code true} on success, {@code false} otherwise
      */
     public static boolean multiFile(String path, String path2, String toPath) {
         File file = new File(path);
@@ -194,13 +194,13 @@ public class FileUtils {
         FileInputStream inputStream = null;
         FileInputStream inputStream2 = null;
         FileOutputStream outputStream = null;
-        if (!file.exists() || !file.canRead()) { // 有权限且文件存在
+        if (!file.exists() || !file.canRead()) { // Ensure we have permission and the file exists
             return false;
         }
-        if (!file2.exists() || !file2.canRead()) { // 有权限且文件存在
+        if (!file2.exists() || !file2.canRead()) { // Ensure we have permission and the file exists
             return false;
         }
-        if (!toFile.exists()) { // 如果文件不存在
+        if (!toFile.exists()) { // Create the destination if it does not exist
             try {
                 File dir = new File(toFile.getParent());
                 if ((!dir.exists()) && !dir.mkdirs()) return false;
@@ -349,12 +349,12 @@ public class FileUtils {
     }
 
     /**
-     * @param file 要删除的文件
+     * @param file file to delete
      */
 
     public static boolean deleteFileSafely(File file) {
         if (file != null && file.exists()) {
-            if (file.isDirectory()) {  // 如果是文件夹，则递归删除其中的文件
+            if (file.isDirectory()) {  // Recursively delete contents if it is a directory
                 File[] files = file.listFiles();
                 if (files != null && files.length > 0) {
                     for (File file1 : files) {
@@ -363,8 +363,8 @@ public class FileUtils {
                 }
             }
             File tmp = getTmpFile(file, System.currentTimeMillis(), -1);
-            if (file.renameTo(tmp)) { // 将源文件重命名
-                return tmp.delete(); // 删除重命名后的文件
+            if (file.renameTo(tmp)) { // Rename the source file
+                return tmp.delete(); // Delete the renamed file
             } else {
                 return file.delete();
             }
@@ -388,10 +388,10 @@ public class FileUtils {
 
 
     /**
-     * 压缩文件或者一个目录
+     * Compress a file or directory into a zip archive.
      *
-     * @param srcPath 资源文件或目录
-     * @param dstPath 输出文件
+     * @param srcPath source file or directory
+     * @param dstPath output archive
      */
     public static boolean compressToZip(String srcPath, String dstPath) {
         File srcFile = new File(srcPath);
@@ -406,7 +406,7 @@ public class FileUtils {
             String baseDir = "";
             compress(srcFile, zipOut, baseDir, true);
 
-            // 关闭 entry
+            // Close the entry
             zipOut.closeEntry();
 
             return true;
@@ -418,11 +418,11 @@ public class FileUtils {
 
 
     /**
-     * 解压文件
+     * Extract a zip archive.
      *
-     * @param zipPath 要解压的目标文件
-     * @param descDir 指定解压目录
-     * @return 解压结果：成功，失败
+     * @param zipPath archive to unpack
+     * @param descDir destination directory
+     * @return {@code true} on success, {@code false} otherwise
      */
     @SuppressWarnings("rawtypes")
     public static boolean decompressZip(String zipPath, String descDir) {
@@ -438,9 +438,9 @@ public class FileUtils {
 
         ZipFile zip = null;
         try {
-            // api level 24 才有此方法
+            // This method is available only on API level 24 and above
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                zip = new ZipFile(zipFile, Charset.forName("gbk"));//防止中文目录，乱码
+                zip = new ZipFile(zipFile, Charset.forName("gbk")); // Prevent garbled paths when directories contain Chinese characters
             } else {
                 zip = new ZipFile(zipFile);
             }
@@ -449,15 +449,15 @@ public class FileUtils {
                 String zipEntryName = entry.getName();
                 InputStream in = zip.getInputStream(entry);
 
-                //指定解压后的文件夹+当前zip文件的名称
+                // Compose the output path from the destination directory and the entry name
                 String outPath = (descDir + zipEntryName).replace("/", File.separator);
-                //判断路径是否存在,不存在则创建文件路径
+                // Ensure the output directory exists
                 File file = new File(outPath.substring(0, outPath.lastIndexOf(File.separator)));
 
                 if (!file.exists()) {
                     file.mkdirs();
                 }
-                //判断文件全路径是否为文件夹,如果是上面已经创建,不需要解压
+                // Skip extraction when the entry resolves to a directory, since it was already created
                 if (new File(outPath).isDirectory()) {
                     try {
                         in.close();
@@ -466,8 +466,8 @@ public class FileUtils {
                     continue;
                 }
 
-                //保存文件路径信息（可利用md5.zip名称的唯一性，来判断是否已经解压）
-//                System.err.println("当前zip解压之后的路径为：" + outPath);
+                // Track extracted file paths (useful when leveraging md5.zip naming to detect repeats)
+//                System.err.println("Zip extracted to: " + outPath);
                 //noinspection IOStreamConstructor
                 OutputStream out = new FileOutputStream(outPath);
                 byte[] buf1 = new byte[2048];
@@ -508,11 +508,11 @@ public class FileUtils {
     }
 
     /**
-     * 压缩一个目录
+     * Compress a directory.
      */
     private static void compressDirectory(File dir, ZipOutputStream zipOut, String baseDir, boolean isRootDir) throws IOException {
         File[] files = dir.listFiles();
-        if (files == null || files.length == 0) {  // 这两行加入将保留空目录
+        if (files == null || files.length == 0) {  // These lines ensure empty directories are preserved
             ZipEntry entry = new ZipEntry(baseDir + dir.getName() + "/");
             zipOut.putNextEntry(entry);
             return;
@@ -527,7 +527,7 @@ public class FileUtils {
     }
 
     /**
-     * 压缩一个文件
+     * Compress a file.
      */
     private static void compressFile(File file, ZipOutputStream zipOut, String baseDir) throws IOException {
         if (!file.exists()) {

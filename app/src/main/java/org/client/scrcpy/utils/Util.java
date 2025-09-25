@@ -28,9 +28,9 @@ public class Util {
                 serverPort = String.valueOf(Integer.parseInt(
                         serverAdr.substring(lastIndex + 1)
                 ));
-                // ipv6 不能去除前后的 []
+                // For IPv6 addresses, keep the surrounding brackets
 //                if (serverHost.startsWith("[") && serverHost.endsWith("]")) {
-//                    // 截取掉 ipv6 的 []
+//                    // Strip the IPv6 brackets if needed
 //                    serverHost = serverHost.substring(1, serverHost.length() - 1);
 //                }
             } catch (Exception e) {
@@ -47,10 +47,10 @@ public class Util {
     }
 
     /**
-     * 拼接 url 请求参数
+     * Build a URL query string.
      *
-     * @param params 参数列表
-     * @return 拼接后的url
+     * @param params list of parameters
+     * @return encoded query string
      */
     public static String getParamUrl(Map<String, String> params) {
         if (params == null || params.isEmpty()) return "";

@@ -47,7 +47,7 @@ public class SendCommands {
         };
         ThreadUtils.execute(() -> {
             try {
-                // 新版的复制方式
+                // Updated copy approach
                 newAdbServerStart(context, ip, localip, port, forwardport, commands);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -69,7 +69,7 @@ public class SendCommands {
         }
         if (status == 0) {
             count = 0;
-            //  检测程序是否已经启动，如果启动了，该文件会被删除
+            // Check whether the process has started; the file is removed once it is running
             while (status == 0 && count < 10) {
                 String adbTextCmd = App.adbCmd("-s", ip + ":" + port, "shell", "ls", "-alh", "/data/local/tmp/scrcpy-server.jar");
                 if (TextUtils.isEmpty(adbTextCmd)) {
@@ -92,7 +92,7 @@ public class SendCommands {
         App.adbCmd("connect", ip + ":" + port);
 
         Log.i("Scrcpy", "adb devices: " + App.adbCmd("devices"));
-        // 复制server端到可执行目录
+        // Copy the server binary into an executable location
         String pushRet = App.adbCmd("-s", ip + ":" + port, "push", new File(
                 context.getExternalFilesDir("scrcpy"), "scrcpy-server.jar"
         ).getAbsolutePath(), "/data/local/tmp/scrcpy-server.jar");
@@ -104,12 +104,12 @@ public class SendCommands {
             status = 2;
             return;
         }
-        // 开启本地端口 forward 转发
-        Log.i("Scrcpy", "开启本地端口转发");
+        // Enable local port forwarding
+        Log.i("Scrcpy", "Enable local port forwarding");
         App.adbCmd("-s", ip + ":" + port, "forward", "tcp:" + serverport, "tcp:" + 7007);
 
         status = 0;
-        // 执行启动命令
+        // Execute the startup command
         App.adbCmd(command);
     }
 

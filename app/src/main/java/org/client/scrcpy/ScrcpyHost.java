@@ -28,7 +28,7 @@ import java.util.Enumeration;
 public class ScrcpyHost implements Scrcpy.ServiceCallbacks {
 
     private Context context;
-    //scrcpy 相关
+    // scrcpy-related state
     private Scrcpy scrcpy;
     private static boolean serviceBound = false;
     private static boolean first_time = true;

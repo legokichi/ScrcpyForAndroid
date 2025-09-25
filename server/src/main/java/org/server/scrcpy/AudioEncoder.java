@@ -47,8 +47,8 @@ public class AudioEncoder {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, MIMETYPE_AUDIO_AAC);
         format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
-        format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 2);  // 通道数固定
-        format.setInteger(MediaFormat.KEY_SAMPLE_RATE, 48000);  // 采样率固定
+        format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 2);  // Channel count is fixed
+        format.setInteger(MediaFormat.KEY_SAMPLE_RATE, 48000);  // Sample rate is fixed
 
         // display the very first frame, and recover from bad quality when no new frames
 //        format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, MICROSECONDS_IN_ONE_SECOND * REPEAT_FRAME_DELAY / frameRate); // µs
@@ -93,14 +93,14 @@ public class AudioEncoder {
                     Ln.i("Retrying...");
                     alive = true;
                 } finally {
-                    Log.d("ScreenCapture", "帧处理 finally 退出了");
+                    Log.d("ScreenCapture", "Frame processing exited in finally block");
                     codec.stop();
                     // destroyDisplay(display);
                     codec.release();
                 }
             } while (alive);
         } finally {
-            Log.d("ScreenCapture", "Audio streamScreen 退出了");
+            Log.d("ScreenCapture", "Audio streamScreen exited");
             if (mediaCodecThread != null) {
                 Looper looper = mediaCodecThread.getLooper();
                 if (looper != null) {

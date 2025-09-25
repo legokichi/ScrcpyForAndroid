@@ -132,7 +132,7 @@ public class Dialog implements Runnable {
     }
 
     /**
-     * 弹出带 帮助 按钮的
+     * Display a dialog that includes a Help button.
      */
     public static void displayDialog(Activity activity, String title, String message,
                                      String helpBtn,
@@ -162,10 +162,10 @@ public class Dialog implements Runnable {
 
         EditText et = new EditText(activity);
         if (isEdit) {
-            et.setHint(hint);  // 设置旧的key数据
-            et.setText(message);  // 设置旧的key数据
+            et.setHint(hint);  // Populate with the previous key data
+            et.setText(message);  // Populate with the previous key data
             et.setGravity(Gravity.CENTER);
-            alert.setView(et); //给对话框添加一个EditText输入文本框
+            alert.setView(et); // Add an EditText input box to the dialog
         } else {
             alert.setMessage(message);
         }
