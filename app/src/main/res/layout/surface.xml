@@ -12,11 +12,22 @@
     android:paddingRight="0px"
     android:weightSum="1">
 
-    <SurfaceView
-        android:id="@+id/decoder_surface"
+    <FrameLayout
+        android:id="@+id/video_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:foregroundGravity="center"
+        android:gravity="center"
+        android:background="@android:color/black">
+
+        <SurfaceView
+            android:id="@+id/decoder_surface"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+    </FrameLayout>
 
     <LinearLayout
         android:id="@+id/nav_button_bar"
@@ -26,28 +37,6 @@
         android:orientation="horizontal"
         android:visibility="gone"
         tools:visibility="visible">
-
-        <!--        <FrameLayout-->
-        <!--            android:id="@+id/back_button"-->
-        <!--            android:layout_width="0dp"-->
-        <!--            android:layout_height="match_parent"-->
-        <!--            android:layout_weight="1"-->
-        <!--            android:background="@drawable/btn_selector">-->
-
-        <!--           -->
-
-        <!--        </FrameLayout>-->
-        <!--        <Button-->
-        <!--            style="?android:attr/buttonBarButtonStyle"-->
-        <!--            android:layout_width="wrap_content"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            android:layout_gravity="center"-->
-        <!--            android:layout_weight="1"-->
-        <!--            android:text="@string/back_button"-->
-        <!--            android:background="@drawable/btn_selector"-->
-        <!--            android:textAlignment="center"-->
-        <!--            android:textColor="@android:color/white"-->
-        <!--            android:textSize="20sp" />-->
 
         <Button
             android:id="@+id/back_button"

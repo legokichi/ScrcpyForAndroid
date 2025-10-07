@@ -8,11 +8,22 @@
     android:orientation="horizontal"
     android:weightSum="2">
 
-    <SurfaceView
-        android:id="@+id/decoder_surface"
-        android:layout_width="match_parent"
+    <FrameLayout
+        android:id="@+id/video_container"
+        android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:foregroundGravity="center"
+        android:gravity="center"
+        android:background="@android:color/black">
+
+        <SurfaceView
+            android:id="@+id/decoder_surface"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+    </FrameLayout>
 
     <LinearLayout
         android:id="@+id/nav_button_bar"

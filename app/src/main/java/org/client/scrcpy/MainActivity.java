@@ -20,19 +20,18 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.text.TextUtils;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListPopupWindow;
 import android.widget.Spinner;
@@ -83,8 +82,28 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
 
     // private byte[] fileBase64;
     private LinearLayout linearLayout;
+    private FrameLayout videoContainer;
 
     private int errorCount = 0;  // Count connection failures; restart the service after too many errors
+
+    private boolean isQuestPanelEnvironment() {
+        // Oculus/Metaブランド端末ではHorizon Homeの自由リサイズを優先する
+        String manufacturer = Build.MANUFACTURER;
+        if (manufacturer != null) {
+            String lower = manufacturer.toLowerCase();
+            if (lower.contains("oculus") || lower.contains("meta")) {
+                return true;
+            }
+        }
+        String brand = Build.BRAND;
+        if (brand != null) {
+            String lowerBrand = brand.toLowerCase();
+            if (lowerBrand.contains("oculus") || lowerBrand.contains("meta")) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -158,6 +177,9 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         }
         if (surfaceView != null) {
             surfaceView = null;
+        }
+        if (videoContainer != null) {
+            videoContainer = null;
         }
         serviceBound = false;
         scrcpy_main();
@@ -241,8 +263,10 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         }
         final View decorView = getWindow().getDecorView();
         decorView.setSystemUiVisibility(View.VISIBLE);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        landscape = false;  // Reset to portrait; incorrect mode can lead to a black screen
+        if (!isQuestPanelEnvironment()) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            landscape = false;  // Reset to portrait; incorrect mode can lead to a black screen
+        }
         setContentView(R.layout.activity_main);
         final Button startButton = findViewById(R.id.button_start);
         // final Button floatButton = findViewById(R.id.button_start_float);
@@ -360,55 +384,19 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
 
     @SuppressLint("ClickableViewAccessibility")
     public void set_display_nd_touch() {
-        DisplayMetrics metrics = new DisplayMetrics();
-        if (ViewConfiguration.get(context).hasPermanentMenuKey()) {
-            getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        } else {
-            final Display display = getWindowManager().getDefaultDisplay();
-            display.getRealMetrics(metrics);
-        }
-//        float this_dev_height = metrics.heightPixels;
-//        float this_dev_width = metrics.widthPixels;
-
-        float this_dev_height = linearLayout.getHeight();
-        float this_dev_width = linearLayout.getWidth();
-        if (PreUtils.get(context, Constant.CONTROL_NAV, false) &&
-                !PreUtils.get(context, Constant.CONTROL_NO, false)) {
-            if (landscape) {
-                this_dev_width = this_dev_width - 96;
-            } else {                                                 //100 is the height of nav bar but need multiples of 8.
-                this_dev_height = this_dev_height - 96;
-            }
+        if (linearLayout != null) {
+            linearLayout.setPadding(0, 0, 0, 0);
         }
         int[] rem_res = scrcpy.get_remote_device_resolution();
-        int remote_device_height = rem_res[1];
-        int remote_device_width = rem_res[0];
-        float remote_device_aspect_ratio = (float) remote_device_height / remote_device_width;
-
-        if (!landscape) {                                                            //Portrait
-            float this_device_aspect_ratio = this_dev_height / this_dev_width;
-//            Log.d("fuck", "set_display_nd_touch: "+this_device_aspect_ratio);
-            if (remote_device_aspect_ratio > this_device_aspect_ratio) {
-                //TODO
-                float wantWidth = this_dev_height / remote_device_aspect_ratio;
-                int padding = (int) (this_dev_width - wantWidth) / 2;
-                linearLayout.setPadding(padding, 0, padding, 0);
-            } else if (remote_device_aspect_ratio < this_device_aspect_ratio) {
-                linearLayout.setPadding(0, (int) (((this_device_aspect_ratio - remote_device_aspect_ratio) * this_dev_width)), 0, 0);
-            }
-
-        } else {                                                                        //Landscape
-            float this_device_aspect_ratio = this_dev_width / this_dev_height;
-//            Log.d("fuck", "set_display_nd_touch_land: "+this_device_aspect_ratio);
-            if (remote_device_aspect_ratio > this_device_aspect_ratio) {
-                float wantHeight = this_dev_width / remote_device_aspect_ratio;
-                int padding = (int) (this_dev_height - wantHeight) / 2;
-                linearLayout.setPadding(0, padding, 0, padding);
-            } else if (remote_device_aspect_ratio < this_device_aspect_ratio) {
-                linearLayout.setPadding(((int) (((this_device_aspect_ratio - remote_device_aspect_ratio) * this_dev_height)) / 2), 0, ((int) (((this_device_aspect_ratio - remote_device_aspect_ratio) * this_dev_height)) / 2), 0);
-            }
-
+        int remoteLong = rem_res[1];
+        int remoteShort = rem_res[0];
+        if (remoteLong <= 0 || remoteShort <= 0) {
+            return;
         }
+        int remoteWidth = landscape ? remoteLong : remoteShort;
+        int remoteHeight = landscape ? remoteShort : remoteLong;
+
+        updateSurfaceLayout(remoteWidth, remoteHeight);
         if (!PreUtils.get(context, Constant.CONTROL_NO, false)) {
             // Log.i("Screen", "setOnTouchListener: " + surfaceView.getWidth() + "x" + surfaceView.getHeight());
             surfaceView.setOnTouchListener((view, event) -> scrcpy.touchevent(event, landscape, surfaceView.getWidth(), surfaceView.getHeight()));
@@ -429,6 +417,38 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
             if (appswitchButton != null) {
                 appswitchButton.setOnClickListener(v -> scrcpy.sendKeyevent(KeyEvent.KEYCODE_APP_SWITCH));
             }
+        }
+    }
+
+    private void updateSurfaceLayout(int remoteWidth, int remoteHeight) {
+        if (videoContainer == null || surfaceView == null) {
+            return;
+        }
+        int containerWidth = videoContainer.getWidth();
+        int containerHeight = videoContainer.getHeight();
+        if (containerWidth == 0 || containerHeight == 0) {
+            videoContainer.post(() -> updateSurfaceLayout(remoteWidth, remoteHeight));
+            return;
+        }
+
+        float remoteAspect = remoteWidth / (float) remoteHeight;
+        float containerAspect = containerWidth / (float) containerHeight;
+
+        int targetWidth;
+        int targetHeight;
+        if (remoteAspect > containerAspect) {
+            targetWidth = containerWidth;
+            targetHeight = Math.round(targetWidth / remoteAspect);
+        } else {
+            targetHeight = containerHeight;
+            targetWidth = Math.round(targetHeight * remoteAspect);
+        }
+
+        ViewGroup.LayoutParams layoutParams = surfaceView.getLayoutParams();
+        if (layoutParams.width != targetWidth || layoutParams.height != targetHeight) {
+            layoutParams.width = targetWidth;
+            layoutParams.height = targetHeight;
+            surfaceView.setLayoutParams(layoutParams);
         }
     }
 
@@ -563,6 +583,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
             nav_bar.setVisibility(LinearLayout.GONE);
         }
         linearLayout = findViewById(R.id.container1);
+        videoContainer = findViewById(R.id.video_container);
         start_Scrcpy_service();
     }
 
@@ -626,10 +647,12 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         result_of_Rotation = true;
         landscape = !landscape;
         swapDimensions();
-        if (landscape) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-        } else {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
+        if (!isQuestPanelEnvironment()) {
+            if (landscape) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+            } else {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
+            }
         }
     }
 
