@@ -33,11 +33,20 @@
             android:name=".MainActivity"
             android:exported="true"
             android:resizeableActivity="true"
-            android:configChanges="orientation|screenSize|smallestScreenSize|density|screenLayout|uiMode">
+            android:screenOrientation="unspecified"
+            android:configChanges="density|keyboard|keyboardHidden|layoutDirection|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="com.oculus.intent.category.2D" />
             </intent-filter>
+
+            <meta-data
+                android:name="com.oculus.vrshell.supports_free_resizing"
+                android:value="true" />
+            <meta-data
+                android:name="com.oculus.vrshell.free_resizing_lock_aspect_ratio"
+                android:value="false" />
         </activity>
 
     </application>
