@@ -208,7 +208,7 @@ public class ScrcpyHost implements Scrcpy.ServiceCallbacks {
     }
 
     public boolean touch(MotionEvent motionEvent, int surfaceW, int surfaceH) {
-        return scrcpy.touchevent(motionEvent, false, surfaceW, surfaceH);
+        return scrcpy.touchevent(motionEvent, surfaceW, surfaceH);
     }
 
     public void keyEvent(int keyCode) {
