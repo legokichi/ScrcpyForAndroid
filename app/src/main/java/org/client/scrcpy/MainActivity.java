@@ -6,9 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
-import android.content.res.Configuration;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -20,14 +18,11 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.text.TextUtils;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -44,6 +39,7 @@ import org.client.scrcpy.utils.PreUtils;
 import org.client.scrcpy.utils.Progress;
 import org.client.scrcpy.utils.ThreadUtils;
 import org.client.scrcpy.utils.Util;
+import org.client.scrcpy.ui.AspectRatioFrameLayout;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -78,11 +74,11 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
     private String serverAdr = null;
     private SurfaceView surfaceView;
     private Surface surface;
+    private AspectRatioFrameLayout videoContainer;
     private Scrcpy scrcpy;
     private long timestamp = 0;
 
     // private byte[] fileBase64;
-    private LinearLayout linearLayout;
 
     private int errorCount = 0;  // Count connection failures; restart the service after too many errors
 
@@ -159,6 +155,9 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         if (surfaceView != null) {
             surfaceView = null;
         }
+        if (videoContainer != null) {
+            videoContainer = null;
+        }
         serviceBound = false;
         scrcpy_main();
 
@@ -183,8 +182,6 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
             screenWidth = savedInstanceState.getInt("screenWidth");
         }
         // Determine whether the screen is currently landscape or portrait
-        landscape = getApplication().getResources().getConfiguration().orientation
-                != Configuration.ORIENTATION_PORTRAIT;
         if (first_time) {
             scrcpy_main();
         } else {
@@ -241,7 +238,6 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         }
         final View decorView = getWindow().getDecorView();
         decorView.setSystemUiVisibility(View.VISIBLE);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         landscape = false;  // Reset to portrait; incorrect mode can lead to a black screen
         setContentView(R.layout.activity_main);
         final Button startButton = findViewById(R.id.button_start);
@@ -360,58 +356,12 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
 
     @SuppressLint("ClickableViewAccessibility")
     public void set_display_nd_touch() {
-        DisplayMetrics metrics = new DisplayMetrics();
-        if (ViewConfiguration.get(context).hasPermanentMenuKey()) {
-            getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        } else {
-            final Display display = getWindowManager().getDefaultDisplay();
-            display.getRealMetrics(metrics);
-        }
-//        float this_dev_height = metrics.heightPixels;
-//        float this_dev_width = metrics.widthPixels;
-
-        float this_dev_height = linearLayout.getHeight();
-        float this_dev_width = linearLayout.getWidth();
-        if (PreUtils.get(context, Constant.CONTROL_NAV, false) &&
-                !PreUtils.get(context, Constant.CONTROL_NO, false)) {
-            if (landscape) {
-                this_dev_width = this_dev_width - 96;
-            } else {                                                 //100 is the height of nav bar but need multiples of 8.
-                this_dev_height = this_dev_height - 96;
-            }
-        }
-        int[] rem_res = scrcpy.get_remote_device_resolution();
-        int remote_device_height = rem_res[1];
-        int remote_device_width = rem_res[0];
-        float remote_device_aspect_ratio = (float) remote_device_height / remote_device_width;
-
-        if (!landscape) {                                                            //Portrait
-            float this_device_aspect_ratio = this_dev_height / this_dev_width;
-//            Log.d("fuck", "set_display_nd_touch: "+this_device_aspect_ratio);
-            if (remote_device_aspect_ratio > this_device_aspect_ratio) {
-                //TODO
-                float wantWidth = this_dev_height / remote_device_aspect_ratio;
-                int padding = (int) (this_dev_width - wantWidth) / 2;
-                linearLayout.setPadding(padding, 0, padding, 0);
-            } else if (remote_device_aspect_ratio < this_device_aspect_ratio) {
-                linearLayout.setPadding(0, (int) (((this_device_aspect_ratio - remote_device_aspect_ratio) * this_dev_width)), 0, 0);
-            }
-
-        } else {                                                                        //Landscape
-            float this_device_aspect_ratio = this_dev_width / this_dev_height;
-//            Log.d("fuck", "set_display_nd_touch_land: "+this_device_aspect_ratio);
-            if (remote_device_aspect_ratio > this_device_aspect_ratio) {
-                float wantHeight = this_dev_width / remote_device_aspect_ratio;
-                int padding = (int) (this_dev_height - wantHeight) / 2;
-                linearLayout.setPadding(0, padding, 0, padding);
-            } else if (remote_device_aspect_ratio < this_device_aspect_ratio) {
-                linearLayout.setPadding(((int) (((this_device_aspect_ratio - remote_device_aspect_ratio) * this_dev_height)) / 2), 0, ((int) (((this_device_aspect_ratio - remote_device_aspect_ratio) * this_dev_height)) / 2), 0);
-            }
-
-        }
+        updateVideoAspectRatio();
         if (!PreUtils.get(context, Constant.CONTROL_NO, false)) {
             // Log.i("Screen", "setOnTouchListener: " + surfaceView.getWidth() + "x" + surfaceView.getHeight());
             surfaceView.setOnTouchListener((view, event) -> scrcpy.touchevent(event, landscape, surfaceView.getWidth(), surfaceView.getHeight()));
+        } else if (surfaceView != null) {
+            surfaceView.setOnTouchListener(null);
         }
 
         if (PreUtils.get(context, Constant.CONTROL_NAV, false) &&
@@ -430,6 +380,27 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
                 appswitchButton.setOnClickListener(v -> scrcpy.sendKeyevent(KeyEvent.KEYCODE_APP_SWITCH));
             }
         }
+    }
+
+    private void updateVideoAspectRatio() {
+        if (videoContainer == null || scrcpy == null) {
+            return;
+        }
+        int[] remoteResolution = scrcpy.get_remote_device_resolution();
+        if (remoteResolution == null || remoteResolution.length < 2) {
+            return;
+        }
+
+        int min = Math.min(remoteResolution[0], remoteResolution[1]);
+        int max = Math.max(remoteResolution[0], remoteResolution[1]);
+        int videoW = landscape ? max : min;
+        int videoH = landscape ? min : max;
+        if (videoW <= 0 || videoH <= 0) {
+            return;
+        }
+        videoContainer.setAspectRatio(videoW, videoH);
+        Log.d("Scrcpy", "video: " + videoW + "x" + videoH +
+                " view: " + videoContainer.getWidth() + "x" + videoContainer.getHeight());
     }
 
     private void setSpinner(final int textArrayOptionResId, final int textViewResId, final String preferenceId) {
@@ -554,6 +525,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
                         | View.SYSTEM_UI_FLAG_FULLSCREEN
                         | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         surfaceView = findViewById(R.id.decoder_surface);
+        videoContainer = findViewById(R.id.video_container);
         surface = surfaceView.getHolder().getSurface();
         final LinearLayout nav_bar = findViewById(R.id.nav_button_bar);
         if (PreUtils.get(context, Constant.CONTROL_NAV, false) &&
@@ -562,7 +534,6 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         } else {
             nav_bar.setVisibility(LinearLayout.GONE);
         }
-        linearLayout = findViewById(R.id.container1);
         start_Scrcpy_service();
     }
 
@@ -613,24 +584,22 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
     public void loadNewRotation() {
-        if (first_time) {
-            first_time = false;
-        }
-        try {
-            // Unbinding might happen twice, so catch the exception
-            unbindService(serviceConnection);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        serviceBound = false;
-        result_of_Rotation = true;
-        landscape = !landscape;
-        swapDimensions();
-        if (landscape) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-        } else {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
-        }
+        // Called from the socket thread; bounce to the UI thread.
+        ThreadUtils.post(() -> {
+            if (first_time) {
+                first_time = false;
+            }
+            result_of_Rotation = true;
+            landscape = !landscape;
+            swapDimensions();
+            updateVideoAspectRatio();
+
+            // Unblock Scrcpy.loop() which waits for updateAvailable to become true.
+            if (scrcpy != null && surface != null) {
+                scrcpy.setParms(surface, screenWidth, screenHeight);
+            }
+            result_of_Rotation = false;
+        });
     }
 
     @Override
@@ -674,7 +643,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
                             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
             if (serviceBound) {
                 // A black screen here is due to configuration and does not require fixing
-                linearLayout = findViewById(R.id.container1);
+                videoContainer = findViewById(R.id.video_container);
                 scrcpy.resume();
             }
         }
