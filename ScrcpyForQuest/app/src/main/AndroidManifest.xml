@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--uses-feature
+        android:name="android.hardware.vr.headtracking"
+        android:required="true"
+        android:version="1" /-->
+
+    <!--uses-feature
+        android:name="android.hardware.vr.high_performance"
+        android:required="false" /-->
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:label="@string/app_name"
+        android:roundIcon="@drawable/ic_launcher_foreground"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.QuestHelloWorld">
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="density|keyboard|keyboardHidden|layoutDirection|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <!--category android:name="com.oculus.intent.category.2D" /-->
+            </intent-filter>
+
+            <property
+                android:name="android.window.layout"
+                android:resource="@xml/panel_window_layout" />
+
+            <!--meta-data
+                android:name="com.oculus.vrshell.supports_free_resizing"
+                android:value="true" /-->
+            <!--meta-data
+                android:name="com.oculus.vrshell.free_resizing_lock_aspect_ratio"
+                android:value="false" /-->
+            <!--meta-data
+                android:name="com.oculus.vrdesktop.control_bar_config"
+                android:value="{'show_title':true,'show_report_bug':false,'with_back_button':true,'use_activity_label':true}" /-->
+        </activity>
+    </application>
+
+</manifest>

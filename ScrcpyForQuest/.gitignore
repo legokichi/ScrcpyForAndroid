@@ -1,0 +1,15 @@
+# Gradle files
+.gradle/
+build/
+local.properties
+.gradle-cache/
+
+# IntelliJ/Android Studio
+.idea/
+*.iml
+
+# Generated files
+app/build/
+
+# OS
+.DS_Store
